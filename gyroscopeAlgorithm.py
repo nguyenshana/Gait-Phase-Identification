@@ -273,7 +273,7 @@ ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 
 ax.set_xlabel('Rows')
 ax.set_ylabel('AngularVelocity')
-ax.set_title('14-01 Participant w/ MSW < -100')
+ax.set_title('14-01 Participant')
 plt.show()
 
 
