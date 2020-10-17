@@ -1,6 +1,7 @@
 # Gait-Phase-Identification
 
-Algorithm to detect gait phase. Currently is based off of excel data from 
+Algorithm to detect gait phase. Currently is based off of excel data with a frame rate of 60 Hz.
+Can be altered to detect in real time.
 
 ## Setup to do before running the program
 
