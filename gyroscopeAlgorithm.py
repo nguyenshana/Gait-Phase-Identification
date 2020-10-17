@@ -49,6 +49,7 @@ participant1401 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-001--Added-angular
 p1401ColumnName = 'Right Lower Leg Angular Velocity'
 participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Added-angular-velocity.xlsx'
 # p1402ColumnName = p1401ColumnName
+columnName = p1401ColumnName
 
 #excel_data_df = pandas.read_excel(participant402, sheet_name='Segment Angular Velocity', usecols=[51])
 excel_data_df = pandas.read_excel(participant1401, sheet_name='Segment Angular Velocity', usecols=[2])
@@ -86,7 +87,7 @@ while (programIsRunning):
         programIsRunning = False
         continue
 
-    angularVelocity = excel_data_df[p1401ColumnName].iloc[row] * (180/math.pi)
+    angularVelocity = excel_data_df[columnName].iloc[row] * (180/math.pi)
     
     print(row, angularVelocity)
     allexcel['row'].append(row)
@@ -133,7 +134,7 @@ while (programIsRunning):
             # this is the 80ms loop
             while row - startCount < 5 :
     
-                angularVelocity = excel_data_df[p1401ColumnName].iloc[row] * (180/math.pi)
+                angularVelocity = excel_data_df[columnName].iloc[row] * (180/math.pi)
                 difference = angularVelocity - previousAngularVelocity
                 
                 if previousDifference < 0 and difference > 0 :
@@ -165,7 +166,7 @@ while (programIsRunning):
                         previousAngularVelocity = angularVelocity
                         previousDifference = difference
                         
-                        angularVelocity = excel_data_df[p1401ColumnName].iloc[row]  * (180/math.pi)
+                        angularVelocity = excel_data_df[columnName].iloc[row]  * (180/math.pi)
                         difference = angularVelocity - previousAngularVelocity
                         
                         if previousDifference < 0 and difference > 0 :
