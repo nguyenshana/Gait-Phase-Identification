@@ -10,11 +10,11 @@ previousAngularVelocity = -1000.0
 previousDifference = -1000.0
 programIsRunning = True
 MSW = 0
-IC = 0
+HS = 0
 TO = 1
 startTime = 0;
 data = { 'MSW': {'MSW Time' : [], 'MSW Angular Velocity' : []},
-    'IC' : {'IC Time' : [], 'IC Angular Velocity' : []},
+    'HS' : {'HS Time' : [], 'HS Angular Velocity' : []},
     'TO' : {'TO Time': [], 'TO Angular Velocity' : []}
     }
 
@@ -52,7 +52,7 @@ participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Added-angular
 columnName = p1401ColumnName
 
 #excel_data_df = pandas.read_excel(participant402, sheet_name='Segment Angular Velocity', usecols=[51])
-excel_data_df = pandas.read_excel(participant1401, sheet_name='Segment Angular Velocity', usecols=[2])
+excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[2])
 
 
 # print the dataframe
@@ -65,7 +65,7 @@ excel_data_df = pandas.read_excel(participant1401, sheet_name='Segment Angular V
 p402InputLength = 2769
 p1401InputLength = 1136
 p1402InputLength = 850
-inputLength = p1401InputLength
+inputLength = p1402InputLength
 
 # Get the value of row 
 # print(excel_data_df['Right Lower Leg z'].iloc[row])
@@ -89,7 +89,6 @@ while (programIsRunning):
 
     angularVelocity = excel_data_df[columnName].iloc[row] * (180/math.pi)
     
-    print(row, angularVelocity)
     allexcel['row'].append(row)
     allexcel['value'].append(angularVelocity)
     
@@ -105,8 +104,10 @@ while (programIsRunning):
     difference = angularVelocity - previousAngularVelocity
     
     # add condition for MSW != 0?
-    if(difference < 0 and previousDifference > 0 and TO == 1) :
-        if(angularVelocity > 100) :
+    # if(difference < 0 and previousDifference > 0 and TO == 1) :
+    if(TO == 1) :
+        #if(angularVelocity > 100) :
+        if(angularVelocity < -150) :
             data['MSW']['MSW Time'].append(row)
             data['MSW']['MSW Angular Velocity'].append(previousAngularVelocity)
             
@@ -119,8 +120,12 @@ while (programIsRunning):
             continue
 
 
+    # finds a minima
     if difference > 0 and previousDifference < 0 :
-        if MSW == 1 and angularVelocity < 0 :
+        # article version:
+        # if MSW == 1 and angularVelocity < 0 :
+        # my version:
+        if MSW == 1 and angularVelocity > 0 :
             minima = angularVelocity
             # startTime = time.time() # time is in ns
             startCount = row
@@ -143,7 +148,7 @@ while (programIsRunning):
                 
                 # if any maxima in 80 ms window and magnitude diff <= 10
                 elif previousDifference > 0 and difference < 0 and angularVelocity - minima <= 10 :
-                    # Code add here: immediate minima = IC
+                    # Code add here: immediate minima = HS
                     
 
                     '''
@@ -191,23 +196,27 @@ while (programIsRunning):
             # 80 ms interval ended
             #
             
-            # Code add here: previous angular velocity = IC
-            # aka for my code: minima = IC
-            data['IC']['IC Time'].append(row)
-            data['IC']['IC Angular Velocity'].append(minima)
+            # Code add here: previous angular velocity = HS
+            # aka for my code: minima = HS
+            data['HS']['HS Time'].append(row)
+            data['HS']['HS Angular Velocity'].append(minima)
 
             MSW = 0
 
             #added this myself
-            IC = 1
+            HS = 1
             #
             #startTime = time.time() # time is in ns
             #
             startTime = row
             previousAngularVelocity = angularVelocity
             previousDifference = difference
-            # print("4th continue")
             continue
+        
+        '''
+        
+        SCRAP THIS ENTIRE COMMENTED SECTION
+        
         
         else :
             #
@@ -215,13 +224,16 @@ while (programIsRunning):
             #
             currentTime = row - startTime
             #
-            #if IC == 1 and angularVelocity < -20 and currentTimeMiliSec > 300 :
+            #if HS == 1 and angularVelocity < -20 and currentTimeMiliSec > 300 :
             #
             # 300 ms = 0.3 sec
             # 0.3/0.01666 = 18.07
             # 
-            if IC == 1 and angularVelocity < -20 and currentTime > 18 :
-                IC = 0
+            # article version:
+            # if HS == 1 and angularVelocity < -20 and currentTime > 18 :
+            # my version:
+            if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
+                HS = 0
                 TO = 1
                 # add here: previousAngularVelocity = TO
                 data['TO']['TO Time'].append(row)
@@ -230,6 +242,21 @@ while (programIsRunning):
                 previousAngularVelocity = angularVelocity
                 previousDifference = difference
                 continue
+            
+            '''
+            
+    currentTime = row - startTime
+            
+    if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
+        HS = 0
+        TO = 1
+        # add here: previousAngularVelocity = TO
+        data['TO']['TO Time'].append(row)
+        data['TO']['TO Angular Velocity'].append(previousAngularVelocity)
+
+        previousAngularVelocity = angularVelocity
+        previousDifference = difference
+        continue
             
     previousAngularVelocity = angularVelocity
     previousDifference = difference
@@ -240,8 +267,8 @@ while (programIsRunning):
 '''
 print("\n", data['MSW']['MSW Time'])
 print(data['MSW']['MSW Angular Velocity'])
-print("\n", data['IC']['IC Time'])
-print(data['IC']['IC Angular Velocity'])
+print("\n", data['HS']['HS Time'])
+print(data['HS']['HS Angular Velocity'])
 print("\n", data['TO']['TO Time'])
 print(data['TO']['TO Angular Velocity'])
 '''
@@ -254,9 +281,9 @@ print (MSWdf)
 # MSWdf.plot(x ='MSW Time', y='MSW Angular Velocity', kind = 'scatter')
 # plt.show()
 
-ICdf = DataFrame(data['IC'],columns=[ 'IC Time', 'IC Angular Velocity'])
-print (ICdf)
-# ICdf.plot(x ='IC Time', y='IC Angular Velocity', kind = 'scatter')
+HSdf = DataFrame(data['HS'],columns=[ 'HS Time', 'HS Angular Velocity'])
+print (HSdf)
+# HSdf.plot(x ='HS Time', y='HS Angular Velocity', kind = 'scatter')
 # plt.show()
 
 TOdf = DataFrame(data['TO'],columns=[ 'TO Time', 'TO Angular Velocity'])
@@ -269,18 +296,18 @@ fig=plt.figure()
 ax=fig.add_axes([0,0,1,1])
 # ax.scatter(allexcel['row'], allexcel['value'], color='r')
 ax.scatter(data['MSW'][ 'MSW Time'], data['MSW']['MSW Angular Velocity'], color='g')
-ax.scatter(data['IC'][ 'IC Time'], data['IC']['IC Angular Velocity'], color='b')
+ax.scatter(data['HS'][ 'HS Time'], data['HS']['HS Angular Velocity'], color='b')
 ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 
 ax.set_xlabel('Rows')
 ax.set_ylabel('AngularVelocity')
-ax.set_title('14-01 Participant')
+ax.set_title('14-02: MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
 plt.show()
 
 
 '''
 plt.plot(data['MSW'][ 'MSW Time'], data['MSW']['MSW Angular Velocity'], label="MSW")
-plt.plot(data['IC'][ 'IC Time'], data['IC']['IC Angular Velocity'], label="IC")
+plt.plot(data['HS'][ 'HS Time'], data['HS']['HS Angular Velocity'], label="HS")
 plt.plot(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], label="TO")
 
 plt.xlabel('Excel Row')
