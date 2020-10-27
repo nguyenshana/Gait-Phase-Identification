@@ -32,7 +32,7 @@ p401Row = 400
 p402Row = p401Row
 p1401Row = 50
 p1402Row = p1401Row
-row = p401Row
+row = p1402Row
 
 '''
 def getAngularVelocity(input):
@@ -44,7 +44,7 @@ def getAngularVelocity(input):
 #
 
 participant401 = '/Users/shana/Desktop/BIOFEEDBACK/data/Participant004-001.xlsx'
-p401ColumnName = 'Right Lower Leg Angular Velocity'
+p401ColumnName = 'Right Lower Leg z'
 p401CalculatedColumnName = 'Right Lower Leg Angular Velocity (calculated)'
 
 participant402 = '/Users/shana/Desktop/BIOFEEDBACK/data/Participant004-002.xlsx'
@@ -52,18 +52,20 @@ p402ColumnName = p401ColumnName
 p402CalculatedColumnName = p401CalculatedColumnName
 
 
-participant1401 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-001--Added-angular-velocity.xlsx'
+participant1401 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-001--Calculated_AV.xlsx'
 p1401ColumnName = 'Right Lower Leg Angular Velocity'
-participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Added-angular-velocity.xlsx'
+
+participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
+p1402ColumnName = p1401ColumnName
 # p1402ColumnName = p1401ColumnName
-columnName = p402CalculatedColumnName
+columnName = p1402ColumnName
 
 '''
 Columns are indexed from zero
 '''
 #excel_data_df = pandas.read_excel(participant402, sheet_name='Segment Angular Velocity', usecols=[51])
-#excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[2])
-excel_data_df = pandas.read_excel(participant401, sheet_name='Check Angular Velocity', usecols=[3])
+excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[2])
+#excel_data_df = pandas.read_excel(participant401, sheet_name='Check Angular Velocity', usecols=[3])
 
 
 # print the dataframe
@@ -76,8 +78,8 @@ excel_data_df = pandas.read_excel(participant401, sheet_name='Check Angular Velo
 p401InputLength = 2769
 p402InputLength = p401InputLength
 p1401InputLength = 1136
-p1402InputLength = 850
-inputLength = p401InputLength
+p1402InputLength = 845
+inputLength = p1402InputLength
 
 # Get the value of row 
 # print(excel_data_df['Right Lower Leg z'].iloc[row])
@@ -319,7 +321,7 @@ ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 
 ax.set_xlabel('Time (row * 1/60)')
 ax.set_ylabel('AngularVelocity')
-ax.set_title('4-01: MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
+ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
 plt.show()
 
 
