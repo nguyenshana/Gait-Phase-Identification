@@ -32,7 +32,7 @@ p401Row = 400
 p402Row = p401Row
 p1401Row = 50
 p1402Row = p1401Row
-row = p1402Row
+row = p401Row
 
 '''
 def getAngularVelocity(input):
@@ -58,13 +58,13 @@ p1401ColumnName = 'Right Lower Leg Angular Velocity'
 participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
 p1402ColumnName = p1401ColumnName
 # p1402ColumnName = p1401ColumnName
-columnName = p1402ColumnName
+columnName = p401ColumnName
 
 '''
 Columns are indexed from zero
 '''
-#excel_data_df = pandas.read_excel(participant402, sheet_name='Segment Angular Velocity', usecols=[51])
-excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[2])
+excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
+#excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[2])
 #excel_data_df = pandas.read_excel(participant401, sheet_name='Check Angular Velocity', usecols=[3])
 
 
@@ -79,16 +79,19 @@ p401InputLength = 2769
 p402InputLength = p401InputLength
 p1401InputLength = 1136
 p1402InputLength = 845
-inputLength = p1402InputLength
+inputLength = p401InputLength
 
 # Get the value of row 
 # print(excel_data_df['Right Lower Leg z'].iloc[row])
 
 
-#
-#
-#
 
+'''
+
+Actual algorithm below!
+
+
+'''
 
 # need to check if 100Hz
 # programStartTime = time.time()
@@ -118,10 +121,16 @@ while (programIsRunning):
     difference = angularVelocity - previousAngularVelocity
     
     # add condition for MSW != 0?
-    # if(difference < 0 and previousDifference > 0 and TO == 1) :
-    if(TO == 1) :
+    # article version: 
+    # find max
+    if(difference < 0 and previousDifference > 0 and TO == 1) :
+    # my version (for miscalculated ang vel): 
+    # if(TO == 1) :
+        # article version:
         #if(angularVelocity > 100) :
-        if(angularVelocity < -150) :
+        # my version:
+        #if(angularVelocity < -150) :
+        if(angularVelocity > 20) :
             data['MSW']['MSW Row'].append(row)
             data['MSW']['MSW Time'].append(row*((1/60)))
             data['MSW']['MSW Angular Velocity'].append(previousAngularVelocity)
@@ -138,9 +147,9 @@ while (programIsRunning):
     # finds a minima
     if difference > 0 and previousDifference < 0 :
         # article version:
-        # if MSW == 1 and angularVelocity < 0 :
-        # my version:
-        if MSW == 1 and angularVelocity > 0 :
+        if MSW == 1 and angularVelocity < 0 :
+        # my version (for miscalculated ang vel):
+        # if MSW == 1 and angularVelocity > 0 :
             minima = angularVelocity
             # startTime = time.time() # time is in ns
             startCount = row
@@ -228,13 +237,10 @@ while (programIsRunning):
             previousAngularVelocity = angularVelocity
             previousDifference = difference
             continue
+    
         
         '''
-        
-        SCRAP THIS ENTIRE COMMENTED SECTION
-        
-        
-        else :
+        else:
             #
             #currentTimeMiliSec = (time.time() * 1000) - (startTime * 1000)
             #
@@ -259,8 +265,12 @@ while (programIsRunning):
                 previousDifference = difference
                 continue
             
-            '''
+        '''
             
+            
+            
+    # moved TO detection so it doesn't need to find a minima first
+        
     currentTime = row - startTime
             
     if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
@@ -277,6 +287,7 @@ while (programIsRunning):
             
     previousAngularVelocity = angularVelocity
     previousDifference = difference
+    
 
 
 
@@ -321,7 +332,8 @@ ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 
 ax.set_xlabel('Time (row * 1/60)')
 ax.set_ylabel('AngularVelocity')
-ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
+#ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
+ax.set_title('4-01 (actual data): using article conditions; no MSW threshold')
 plt.show()
 
 
