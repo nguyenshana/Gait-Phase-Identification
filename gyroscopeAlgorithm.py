@@ -12,10 +12,10 @@ programIsRunning = True
 MSW = 0
 HS = 0
 TO = 1
-startTime = 0;
+startTime = 0
 data = { 'MSW': {'MSW Row': [], 'MSW Time' : [], 'MSW Angular Velocity' : []},
     'HS' : {'HS Row': [], 'HS Time' : [], 'HS Angular Velocity' : []},
-    'TO' : {'TO Row': [], 'TO Time': [], 'TO Angular Velocity' : []}
+    'TO' : {'TO Row': [], 'TO Time' : [], 'TO Angular Velocity' : []}
     }
 
 # dataset to hold all excel values
@@ -32,11 +32,12 @@ p401Row = 400
 p402Row = p401Row
 p1401Row = 50
 p1402Row = p1401Row
-row = p401Row
+row = p1402Row
 
 '''
-def getAngularVelocity(input):
-    return 1
+
+^ CHANGE ROW ABOVE
+
 '''
 
 #
@@ -47,42 +48,50 @@ participant401 = '/Users/shana/Desktop/BIOFEEDBACK/data/Participant004-001.xlsx'
 p401ColumnName = 'Right Lower Leg z'
 p401CalculatedColumnName = 'Right Lower Leg Angular Velocity (calculated)'
 
+p401MaybeDegreesCalculated = 'colum F *180/PI()'
+
 participant402 = '/Users/shana/Desktop/BIOFEEDBACK/data/Participant004-002.xlsx'
 p402ColumnName = p401ColumnName
 p402CalculatedColumnName = p401CalculatedColumnName
 
+p402MaybeDegreesCalculated = 'colum I *180/PI()'
+
 
 participant1401 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-001--Calculated_AV.xlsx'
-p1401ColumnName = 'Right Lower Leg Angular Velocity'
+p1401ColumnName = 'Right Lower Leg Angular Velocity (from radians)'
+
 
 participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
 p1402ColumnName = p1401ColumnName
 # p1402ColumnName = p1401ColumnName
-columnName = p401ColumnName
+columnName = p1402ColumnName
+'''
+
+^ CHANGE COLUMN NAME ABOVE
 
 '''
-Columns are indexed from zero
+
+#Columns are indexed from zero
+
+#excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
+excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[4])
+#excel_data_df = pandas.read_excel(participant402, sheet_name='Check Angular Velocity', usecols=[7])
 '''
-excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
-#excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[2])
-#excel_data_df = pandas.read_excel(participant401, sheet_name='Check Angular Velocity', usecols=[3])
 
+^ CHANGE EXCEL_DATA_DF ABOVE
 
-# print the dataframe
-# print(excel_data_df)
-
-# getting length of file, but its 2770
-# inputLength = len(excel_data_df)
+'''
 
 
 p401InputLength = 2769
 p402InputLength = p401InputLength
 p1401InputLength = 1136
 p1402InputLength = 845
-inputLength = p401InputLength
+inputLength = p1402InputLength
+'''
+^ CHANGE INPUT LENGTH ABOVE
 
-# Get the value of row 
-# print(excel_data_df['Right Lower Leg z'].iloc[row])
+'''
 
 
 
@@ -104,7 +113,7 @@ while (programIsRunning):
         programIsRunning = False
         continue
 
-    angularVelocity = excel_data_df[columnName].iloc[row] * (180/math.pi)
+    angularVelocity = excel_data_df[columnName].iloc[row] * 180 / math.pi
     
     allexcel['row'].append(row)
     allexcel['value'].append(angularVelocity)
@@ -130,7 +139,8 @@ while (programIsRunning):
         #if(angularVelocity > 100) :
         # my version:
         #if(angularVelocity < -150) :
-        if(angularVelocity > 20) :
+        if(angularVelocity > 100 or previousAngularVelocity > 100) :
+        #if angularVelocity > 100 or previousAngularVelocity > 100 :
             data['MSW']['MSW Row'].append(row)
             data['MSW']['MSW Time'].append(row*((1/60)))
             data['MSW']['MSW Angular Velocity'].append(previousAngularVelocity)
@@ -150,6 +160,7 @@ while (programIsRunning):
         if MSW == 1 and angularVelocity < 0 :
         # my version (for miscalculated ang vel):
         # if MSW == 1 and angularVelocity > 0 :
+        # if MSW == 1 :
             minima = angularVelocity
             # startTime = time.time() # time is in ns
             startCount = row
@@ -163,7 +174,7 @@ while (programIsRunning):
             # this is the 80ms loop
             while row - startCount < 5 :
     
-                angularVelocity = excel_data_df[columnName].iloc[row] * (180/math.pi)
+                angularVelocity = excel_data_df[columnName].iloc[row] * 180 / math.pi
                 difference = angularVelocity - previousAngularVelocity
                 
                 if previousDifference < 0 and difference > 0 :
@@ -195,7 +206,7 @@ while (programIsRunning):
                         previousAngularVelocity = angularVelocity
                         previousDifference = difference
                         
-                        angularVelocity = excel_data_df[columnName].iloc[row]  * (180/math.pi)
+                        angularVelocity = excel_data_df[columnName].iloc[row] * 180 / math.pi
                         difference = angularVelocity - previousAngularVelocity
                         
                         if previousDifference < 0 and difference > 0 :
@@ -238,8 +249,8 @@ while (programIsRunning):
             previousDifference = difference
             continue
     
-        
         '''
+        
         else:
             #
             #currentTimeMiliSec = (time.time() * 1000) - (startTime * 1000)
@@ -252,13 +263,14 @@ while (programIsRunning):
             # 0.3/0.01666 = 18.07
             # 
             # article version:
-            # if HS == 1 and angularVelocity < -20 and currentTime > 18 :
+            if HS == 1 and angularVelocity < -20 and currentTime > 18 :
             # my version:
-            if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
+            #if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
                 HS = 0
                 TO = 1
                 # add here: previousAngularVelocity = TO
-                data['TO']['TO Time'].append(row)
+                data['TO']['TO Row'].append(row)
+                data['TO']['TO Time'].append(row*((1/60)))
                 data['TO']['TO Angular Velocity'].append(previousAngularVelocity)
 
                 previousAngularVelocity = angularVelocity
@@ -272,7 +284,8 @@ while (programIsRunning):
     # moved TO detection so it doesn't need to find a minima first
         
     currentTime = row - startTime
-            
+    
+    # finds maxima
     if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
         HS = 0
         TO = 1
@@ -284,24 +297,13 @@ while (programIsRunning):
         previousAngularVelocity = angularVelocity
         previousDifference = difference
         continue
+    
+    
             
     previousAngularVelocity = angularVelocity
     previousDifference = difference
     
-
-
-
-        
-'''
-print("\n", data['MSW']['MSW Time'])
-print(data['MSW']['MSW Angular Velocity'])
-print("\n", data['HS']['HS Time'])
-print(data['HS']['HS Angular Velocity'])
-print("\n", data['TO']['TO Time'])
-print(data['TO']['TO Angular Velocity'])
-'''
-
-
+    
 
 
 MSWdf = DataFrame(data['MSW'],columns=['MSW Row', 'MSW Time', 'MSW Angular Velocity'])
@@ -326,25 +328,21 @@ print (TOdf)
 fig=plt.figure()
 ax=fig.add_axes([0,0,1,1])
 # ax.scatter(allexcel['row'], allexcel['value'], color='r')
-ax.scatter(data['MSW'][ 'MSW Time'], data['MSW']['MSW Angular Velocity'], color='g')
+ax.scatter(data['MSW'][ 'MSW Time'], data['MSW']['MSW Angular Velocity'], color='r')
 ax.scatter(data['HS'][ 'HS Time'], data['HS']['HS Angular Velocity'], color='b')
 ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 
 ax.set_xlabel('Time (row * 1/60)')
 ax.set_ylabel('AngularVelocity')
 #ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
-ax.set_title('4-01 (actual data): using article conditions; no MSW threshold')
+ax.set_title('14-02 with OG code on the paper but MSW has > 100 and prev > 100')
 plt.show()
 
+'''
+
+^ CHANGE THE AX.SET_TITLE ABOVE
 
 '''
-plt.plot(data['MSW'][ 'MSW Time'], data['MSW']['MSW Angular Velocity'], label="MSW")
-plt.plot(data['HS'][ 'HS Time'], data['HS']['HS Angular Velocity'], label="HS")
-plt.plot(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], label="TO")
 
-plt.xlabel('Excel Row')
-plt.ylabel('Angular Velocity')
-plt.legend()
-plt.show()
-'''
+
         
