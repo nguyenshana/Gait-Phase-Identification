@@ -31,7 +31,7 @@ allexcel = { 'row' : [], 'value' : [] }
 p401Row = 400
 p402Row = p401Row
 p1401Row = 50
-p1402Row = p1401Row
+p1402Row = 150
 row = p1402Row
 
 '''
@@ -44,24 +44,24 @@ row = p1402Row
 # SECTION TO IMPORT AND GET EXCEL STUFF
 #
 
-participant401 = '/Users/shana/Desktop/BIOFEEDBACK/data/Participant004-001.xlsx'
+participant401 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/Participant004-001.xlsx'
 p401ColumnName = 'Right Lower Leg z'
 p401CalculatedColumnName = 'Right Lower Leg Angular Velocity (calculated)'
 
 p401MaybeDegreesCalculated = 'colum F *180/PI()'
 
-participant402 = '/Users/shana/Desktop/BIOFEEDBACK/data/Participant004-002.xlsx'
+participant402 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/Participant004-002.xlsx'
 p402ColumnName = p401ColumnName
 p402CalculatedColumnName = p401CalculatedColumnName
 
 p402MaybeDegreesCalculated = 'colum I *180/PI()'
 
 
-participant1401 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-001--Calculated_AV.xlsx'
+participant1401 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/F014-001--Calculated_AV.xlsx'
 p1401ColumnName = 'Right Lower Leg Angular Velocity (from radians)'
 
 
-participant1402 = '/Users/shana/Desktop/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
+participant1402 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
 p1402ColumnName = p1401ColumnName
 # p1402ColumnName = p1401ColumnName
 columnName = p1402ColumnName
@@ -73,7 +73,7 @@ columnName = p1402ColumnName
 
 #Columns are indexed from zero
 
-#excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
+#excel_data_df = pandas.read_excel(participant402, sheet_name='Segment Angular Velocity', usecols=[51])
 excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[4])
 #excel_data_df = pandas.read_excel(participant402, sheet_name='Check Angular Velocity', usecols=[7])
 '''
@@ -136,13 +136,13 @@ while (programIsRunning):
     # my version (for miscalculated ang vel): 
     # if(TO == 1) :
         # article version:
-        #if(angularVelocity > 100) :
+        if(angularVelocity > 100 or previousAngularVelocity > 100) :
         # my version:
         #if(angularVelocity < -150) :
-        if(angularVelocity > 100 or previousAngularVelocity > 100) :
+        #if(angularVelocity > 100 or previousAngularVelocity > 100) :
         #if angularVelocity > 100 or previousAngularVelocity > 100 :
-            data['MSW']['MSW Row'].append(row)
-            data['MSW']['MSW Time'].append(row*((1/60)))
+            data['MSW']['MSW Row'].append(row - 1)
+            data['MSW']['MSW Time'].append((row - 1)*((1/60)))
             data['MSW']['MSW Angular Velocity'].append(previousAngularVelocity)
             
 
@@ -155,12 +155,13 @@ while (programIsRunning):
 
 
     # finds a minima
-    if difference > 0 and previousDifference < 0 :
+    if previousDifference < 0 and difference > 0 :
         # article version:
         if MSW == 1 and angularVelocity < 0 :
         # my version (for miscalculated ang vel):
         # if MSW == 1 and angularVelocity > 0 :
         # if MSW == 1 :
+            minimaRow = row
             minima = angularVelocity
             # startTime = time.time() # time is in ns
             startCount = row
@@ -172,26 +173,29 @@ while (programIsRunning):
             #
             
             # this is the 80ms loop
-            while row - startCount < 5 :
-    
+            '''
+            80 ms
+            previous minima
+            max closer to it
+            then the next 'minima' is below the maxima & negative slope (so when it turns back to increasing)
+            '''
+            foundMinima = False
+            while row - startCount < 5 and not foundMinima:
+                
+                row += 1
+                
                 angularVelocity = excel_data_df[columnName].iloc[row] * 180 / math.pi
                 difference = angularVelocity - previousAngularVelocity
+    
                 
+                # if a minima
                 if previousDifference < 0 and difference > 0 :
+                    minimaRow = row
                     minima = angularVelocity
                 
-                
                 # if any maxima in 80 ms window and magnitude diff <= 10
-                elif previousDifference > 0 and difference < 0 and angularVelocity - minima <= 10 :
+                if previousDifference > 0 and difference < 0 and angularVelocity - minima <= 10 :
                     # Code add here: immediate minima = HS
-                    
-
-                    '''
-                    80 ms
-                    previous minima
-                    max closer to it
-                    then the next 'minima' is below the maxima & negative slope (so when it turns back to increasing)
-                    '''
 
 
                     #
@@ -199,31 +203,39 @@ while (programIsRunning):
                     #
                     # search for immediate minima, previous diff is negative and diff is positive
                     maxima = angularVelocity
-                    isMinima = False;
-                    while not minima and row - startCount < 5 :
+                    while not foundMinima and row - startCount < 5 :
                         # wait for next input = increase row
-                        row += 1
+                        
                         previousAngularVelocity = angularVelocity
                         previousDifference = difference
                         
+                        row += 1
                         angularVelocity = excel_data_df[columnName].iloc[row] * 180 / math.pi
                         difference = angularVelocity - previousAngularVelocity
                         
                         if previousDifference < 0 and difference > 0 :
-                            isMinima = True
+                            minimaRow = row
+                            minima = angularVelocity
+                            foundMinima = True
                     #
                     # if ((time.time() * 1000) - (startTime * 1000)) <= 80 :
                     #
                     # if minima is not found then just use the maxima value
                     # else minima is found, then use the last angular velocity value
-                    if not isMinima:
+                    # old code that I thought was the same as the article, but it sets the current value as the minima instead
+                    '''if not isMinima:
                         minima = maxima
                     else:
-                        minima = angularVelocity
+                        minima = angularVelocity'''
 
                 
                 # after this leaves the while loop and goes to the continue, it essentially skips a line
+                ''' moved this to the top of the while loop
                 row += 1
+                previousAngularVelocity = angularVelocity
+                previousDifference = difference
+                '''
+                #the below line was originally at the top of the while loop
                 previousAngularVelocity = angularVelocity
                 previousDifference = difference
 
@@ -233,8 +245,8 @@ while (programIsRunning):
             
             # Code add here: previous angular velocity = HS
             # aka for my code: minima = HS
-            data['HS']['HS Row'].append(row)
-            data['HS']['HS Time'].append(row*(1/60))
+            data['HS']['HS Row'].append(minimaRow)
+            data['HS']['HS Time'].append(minimaRow*(1/60))
             data['HS']['HS Angular Velocity'].append(minima)
 
             MSW = 0
@@ -249,7 +261,7 @@ while (programIsRunning):
             previousDifference = difference
             continue
     
-        '''
+        
         
         else:
             #
@@ -263,14 +275,14 @@ while (programIsRunning):
             # 0.3/0.01666 = 18.07
             # 
             # article version:
-            if HS == 1 and angularVelocity < -20 and currentTime > 18 :
+            if HS == 1 and angularVelocity < -50 and currentTime > 18 :
             # my version:
             #if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
                 HS = 0
                 TO = 1
                 # add here: previousAngularVelocity = TO
-                data['TO']['TO Row'].append(row)
-                data['TO']['TO Time'].append(row*((1/60)))
+                data['TO']['TO Row'].append(row-1)
+                data['TO']['TO Time'].append((row-1)*((1/60)))
                 data['TO']['TO Angular Velocity'].append(previousAngularVelocity)
 
                 previousAngularVelocity = angularVelocity
@@ -280,12 +292,11 @@ while (programIsRunning):
         '''
             
             
-            
     # moved TO detection so it doesn't need to find a minima first
         
     currentTime = row - startTime
     
-    # finds maxima
+    # finds crossing from positive ang velocity to negative
     if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
         HS = 0
         TO = 1
@@ -297,6 +308,9 @@ while (programIsRunning):
         previousAngularVelocity = angularVelocity
         previousDifference = difference
         continue
+    
+    '''
+    
     
     
             
@@ -335,7 +349,7 @@ ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 ax.set_xlabel('Time (row * 1/60)')
 ax.set_ylabel('AngularVelocity')
 #ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
-ax.set_title('14-02 with OG code on the paper but MSW has > 100 and prev > 100')
+ax.set_title('14-02 with "corrected" OG code but MSW with prevAV > 100 and TO maxima')
 plt.show()
 
 '''
