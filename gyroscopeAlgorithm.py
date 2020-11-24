@@ -32,7 +32,7 @@ p401Row = 400
 p402Row = p401Row
 p1401Row = 50
 p1402Row = 150
-row = p1402Row
+row = p401Row
 
 '''
 
@@ -64,7 +64,7 @@ p1401ColumnName = 'Right Lower Leg Angular Velocity (from radians)'
 participant1402 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
 p1402ColumnName = p1401ColumnName
 # p1402ColumnName = p1401ColumnName
-columnName = p1402ColumnName
+columnName = p401ColumnName
 '''
 
 ^ CHANGE COLUMN NAME ABOVE
@@ -73,8 +73,8 @@ columnName = p1402ColumnName
 
 #Columns are indexed from zero
 
-#excel_data_df = pandas.read_excel(participant402, sheet_name='Segment Angular Velocity', usecols=[51])
-excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[4])
+excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
+#excel_data_df = pandas.read_excel(participant1401, sheet_name='Segment Angular Velocity', usecols=[4])
 #excel_data_df = pandas.read_excel(participant402, sheet_name='Check Angular Velocity', usecols=[7])
 '''
 
@@ -87,7 +87,7 @@ p401InputLength = 2769
 p402InputLength = p401InputLength
 p1401InputLength = 1136
 p1402InputLength = 845
-inputLength = p1402InputLength
+inputLength = p401InputLength
 '''
 ^ CHANGE INPUT LENGTH ABOVE
 
@@ -101,6 +101,36 @@ Actual algorithm below!
 
 
 '''
+
+'''
+
+Making threshold based off of -20 threshold wouldn't work because the training part would be
+inaccurate (gets incorrect values that aren't TO')
+
+TOthreshold = -20
+TOmin = 10000
+TOmax = -10000
+# insert into array with .insert(index, value)
+TOvalues = []
+TOindex = 0
+
+TOvalues.insert(TOindex, previousAngularVelocity)
+TOindex += 1
+if TOindex == 5 :
+    TOindex = 5
+    
+if previousAngularVelocity > TOmax :
+    TOmax = previousAngularVelocity
+elif previousAngularVelocity < TOmin :
+    TOmin = previousAngularVelocity
+    
+if len(TOvalues) == 5 :
+    TOthreshold = ( sum(TOvalues) / len(TOvalues) ) + ( (TOmax - TOmin) / 5 )
+
+'''
+
+prevMin = 0
+prevMax = 0
 
 # need to check if 100Hz
 # programStartTime = time.time()
@@ -129,13 +159,14 @@ while (programIsRunning):
     
     difference = angularVelocity - previousAngularVelocity
     
-    # add condition for MSW != 0?
+    # add condition for MSW != 0? 
     # article version: 
-    # find max
-    if(difference < 0 and previousDifference > 0 and TO == 1) :
+    # find max 
+    if(previousDifference > 0 and difference < 0 and TO == 1) :
     # my version (for miscalculated ang vel): 
     # if(TO == 1) :
-        # article version:
+        prevMax = angularVelocity
+        # article version without prevAV > 100:
         if(angularVelocity > 100 or previousAngularVelocity > 100) :
         # my version:
         #if(angularVelocity < -150) :
@@ -156,6 +187,8 @@ while (programIsRunning):
 
     # finds a minima
     if previousDifference < 0 and difference > 0 :
+        
+        prevMin = angularVelocity
         # article version:
         if MSW == 1 and angularVelocity < 0 :
         # my version (for miscalculated ang vel):
@@ -274,7 +307,7 @@ while (programIsRunning):
             # 300 ms = 0.3 sec
             # 0.3/0.01666 = 18.07
             # 
-            # article version:
+            # article version has AV < -20 while I used -50:
             if HS == 1 and angularVelocity < -50 and currentTime > 18 :
             # my version:
             #if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
@@ -349,7 +382,7 @@ ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 ax.set_xlabel('Time (row * 1/60)')
 ax.set_ylabel('AngularVelocity')
 #ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
-ax.set_title('14-02 with "corrected" OG code but MSW with prevAV > 100 and TO maxima')
+ax.set_title('4-01 with OG code but MSW with prevAV > 100 and TO maxima < -50')
 plt.show()
 
 '''
