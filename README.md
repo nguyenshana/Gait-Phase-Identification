@@ -10,7 +10,7 @@ Can be altered to detect in real time.
 Remember to change (or at least check):
 1. Set staring row amount
 2. Set filepath variable
-3. Set column name 
+3. Set column name (if necessary)
 4. excel_data_df needs to read the new file
 5. Set input length
 6. Add chart title [the part that says: ax.set_title(...)]
