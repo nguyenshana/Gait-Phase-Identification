@@ -8,7 +8,6 @@ import math
 # arbitrary values I assume to be impossible
 previousAngularVelocity = -1000.0
 previousDifference = -1000.0
-programIsRunning = True
 MSW = 0
 HS = 0
 TO = 1
@@ -32,7 +31,7 @@ p401Row = 400
 p402Row = p401Row
 p1401Row = 50
 p1402Row = 150
-row = p401Row
+row = p1402Row
 
 '''
 
@@ -64,7 +63,7 @@ p1401ColumnName = 'Right Lower Leg Angular Velocity (from radians)'
 participant1402 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
 p1402ColumnName = p1401ColumnName
 # p1402ColumnName = p1401ColumnName
-columnName = p401ColumnName
+columnName = p1402ColumnName
 '''
 
 ^ CHANGE COLUMN NAME ABOVE
@@ -73,8 +72,8 @@ columnName = p401ColumnName
 
 #Columns are indexed from zero
 
-excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
-#excel_data_df = pandas.read_excel(participant1401, sheet_name='Segment Angular Velocity', usecols=[4])
+#excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
+excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[4])
 #excel_data_df = pandas.read_excel(participant402, sheet_name='Check Angular Velocity', usecols=[7])
 '''
 
@@ -87,7 +86,7 @@ p401InputLength = 2769
 p402InputLength = p401InputLength
 p1401InputLength = 1136
 p1402InputLength = 845
-inputLength = p401InputLength
+inputLength = p1402InputLength
 '''
 ^ CHANGE INPUT LENGTH ABOVE
 
@@ -102,46 +101,12 @@ Actual algorithm below!
 
 '''
 
-'''
-
-Making threshold based off of -20 threshold wouldn't work because the training part would be
-inaccurate (gets incorrect values that aren't TO')
-
-TOthreshold = -20
-TOmin = 10000
-TOmax = -10000
-# insert into array with .insert(index, value)
-TOvalues = []
-TOindex = 0
-
-TOvalues.insert(TOindex, previousAngularVelocity)
-TOindex += 1
-if TOindex == 5 :
-    TOindex = 5
-    
-if previousAngularVelocity > TOmax :
-    TOmax = previousAngularVelocity
-elif previousAngularVelocity < TOmin :
-    TOmin = previousAngularVelocity
-    
-if len(TOvalues) == 5 :
-    TOthreshold = ( sum(TOvalues) / len(TOvalues) ) + ( (TOmax - TOmin) / 5 )
-
-'''
-
-prevMin = 0
-prevMax = 0
 
 # need to check if 100Hz
 # programStartTime = time.time()
-while (programIsRunning):
+while (row < inputLength):
     
     row += 1
-    
-    # terminating condition
-    if (row > inputLength) :
-        programIsRunning = False
-        continue
 
     angularVelocity = excel_data_df[columnName].iloc[row] * 180 / math.pi
     
@@ -165,7 +130,6 @@ while (programIsRunning):
     if(previousDifference > 0 and difference < 0 and TO == 1) :
     # my version (for miscalculated ang vel): 
     # if(TO == 1) :
-        prevMax = angularVelocity
         # article version without prevAV > 100:
         if(angularVelocity > 100 or previousAngularVelocity > 100) :
         # my version:
@@ -188,11 +152,8 @@ while (programIsRunning):
     # finds a minima
     if previousDifference < 0 and difference > 0 :
         
-        prevMin = angularVelocity
         # article version:
         if MSW == 1 and angularVelocity < 0 :
-        # my version (for miscalculated ang vel):
-        # if MSW == 1 and angularVelocity > 0 :
         # if MSW == 1 :
             minimaRow = row
             minima = angularVelocity
@@ -206,6 +167,9 @@ while (programIsRunning):
             #
             
             # this is the 80ms loop
+            #
+            # if ((time.time() * 1000) - (startTime * 1000)) <= 80 :
+            #
             '''
             80 ms
             previous minima
@@ -250,25 +214,8 @@ while (programIsRunning):
                             minimaRow = row
                             minima = angularVelocity
                             foundMinima = True
-                    #
-                    # if ((time.time() * 1000) - (startTime * 1000)) <= 80 :
-                    #
-                    # if minima is not found then just use the maxima value
-                    # else minima is found, then use the last angular velocity value
-                    # old code that I thought was the same as the article, but it sets the current value as the minima instead
-                    '''if not isMinima:
-                        minima = maxima
-                    else:
-                        minima = angularVelocity'''
 
                 
-                # after this leaves the while loop and goes to the continue, it essentially skips a line
-                ''' moved this to the top of the while loop
-                row += 1
-                previousAngularVelocity = angularVelocity
-                previousDifference = difference
-                '''
-                #the below line was originally at the top of the while loop
                 previousAngularVelocity = angularVelocity
                 previousDifference = difference
 
@@ -382,7 +329,7 @@ ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 ax.set_xlabel('Time (row * 1/60)')
 ax.set_ylabel('AngularVelocity')
 #ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
-ax.set_title('4-01 with OG code but MSW with prevAV > 100 and TO maxima < -50')
+ax.set_title('14-02 with OG code but MSW with prevAV > 100 and TO maxima < -50')
 plt.show()
 
 '''
