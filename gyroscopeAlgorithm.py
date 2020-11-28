@@ -269,30 +269,7 @@ while (row < inputLength):
                 previousDifference = difference
                 continue
             
-        '''
-            
-            
-    # moved TO detection so it doesn't need to find a minima first
         
-    currentTime = row - startTime
-    
-    # finds crossing from positive ang velocity to negative
-    if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
-        HS = 0
-        TO = 1
-        # add here: previousAngularVelocity = TO
-        data['TO']['TO Row'].append(row)
-        data['TO']['TO Time'].append(row*((1/60)))
-        data['TO']['TO Angular Velocity'].append(previousAngularVelocity)
-
-        previousAngularVelocity = angularVelocity
-        previousDifference = difference
-        continue
-    
-    '''
-    
-    
-    
             
     previousAngularVelocity = angularVelocity
     previousDifference = difference
