@@ -20,89 +20,96 @@ data = { 'MSW': {'MSW Row': [], 'MSW Time' : [], 'MSW Angular Velocity' : []},
 # dataset to hold all excel values
 allexcel = { 'row' : [], 'value' : [] }
 
-# CHANGING EXCEL INPUT
-# 1. staring row amount (right below this comment section)
-# 2. add filepath variable if it's not there
-# 3. excel_data_df needs to read the new file
-# 4. set input length
-# 5. ax.set_title at the very end part of code
 
-p401Row = 400
-p402Row = p401Row
-p1401Row = 50
-p1402Row = 150
-row = p1402Row
+
+
+
+# Participant information below
+
+
+typicalColumnName = 'Right Lower Leg z'
+pathToFolder = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/'
+
+# Format of trials = participantKey : [rowValue, columnName, filePath, lastRow]
+ROW_INDEX = 0
+COLUMN_INDEX = 1
+FILEPATH_INDEX = 2
+LASTROW_INDEX = 3
+trials = {
+    'p401' : [400, typicalColumnName, pathToFolder + 'Participant004-001.xlsx', 2769],
+    'p402' : [400, typicalColumnName, pathToFolder + 'Participant004-002.xlsx', 2769],
+    'p1401' : [50, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-001--Calculated_AV.xlsx', 1136],
+    'p1402' : [150, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-002--Calculated_AV.xlsx', 845],
+    'p2801' : [520, typicalColumnName, pathToFolder + 'Participant028-001.xlsx', 3800],
+    'p2802' : [700, typicalColumnName, pathToFolder + 'Participant028-002.xlsx', 4000],
+    'p303' : [400, typicalColumnName, pathToFolder + 'Participant003-003.xlsx', 2600],
+          }
+
+
+row = None;
+columnName = None;
+inputLength = 0;
+excel_data_df = None;
+
+
+# Input example: 'p401'
+def setParticipant(participant):
+    global row
+    row = trials[participant][ROW_INDEX]
+    global columnName 
+    columnName = trials[participant][COLUMN_INDEX]
+    
+    #Columns are indexed from zero
+    global excel_data_df
+    if (participant != 'p1401' and participant != 'p1402') :
+        print('not part 14!')
+        print(participant)
+        excel_data_df = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Segment Angular Velocity', usecols=[51])
+    else:
+        print('part 14!')
+        excel_data_df = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Segment Angular Velocity', usecols=[4])
+    global inputLength
+    inputLength = trials[participant][LASTROW_INDEX]
+
+
+def calculate80msToRow(frequency):
+    return 0.08 * frequency
+
+def calculate300msToRow(frequency):
+    return 0.3 * frequency
+
+
+# Frequency at which data is taken:
+# Participant 4 = 60 Hz
+# Participant 14 = 60 Hz
+# Participant 28 = 100Hz
+# Participant 3 = 60 Hz
+
+frequency = 60
+'''
+^ CHECK IF CORRECT FREQUENCY IS SET
 
 '''
 
-^ CHANGE ROW ABOVE
+participant = 'p1401'
+'''
+^ SET CORRECT PARTICIPANT
 
 '''
-
-#
-# SECTION TO IMPORT AND GET EXCEL STUFF
-#
-
-participant401 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/Participant004-001.xlsx'
-p401ColumnName = 'Right Lower Leg z'
-p401CalculatedColumnName = 'Right Lower Leg Angular Velocity (calculated)'
-
-p401MaybeDegreesCalculated = 'colum F *180/PI()'
-
-participant402 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/Participant004-002.xlsx'
-p402ColumnName = p401ColumnName
-p402CalculatedColumnName = p401CalculatedColumnName
-
-p402MaybeDegreesCalculated = 'colum I *180/PI()'
-
-
-participant1401 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/F014-001--Calculated_AV.xlsx'
-p1401ColumnName = 'Right Lower Leg Angular Velocity (from radians)'
-
-
-participant1402 = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/F014-002--Calculated_AV.xlsx'
-p1402ColumnName = p1401ColumnName
-# p1402ColumnName = p1401ColumnName
-columnName = p1402ColumnName
-'''
-
-^ CHANGE COLUMN NAME ABOVE
-
-'''
-
-#Columns are indexed from zero
-
-#excel_data_df = pandas.read_excel(participant401, sheet_name='Segment Angular Velocity', usecols=[51])
-excel_data_df = pandas.read_excel(participant1402, sheet_name='Segment Angular Velocity', usecols=[4])
-#excel_data_df = pandas.read_excel(participant402, sheet_name='Check Angular Velocity', usecols=[7])
-'''
-
-^ CHANGE EXCEL_DATA_DF ABOVE
-
-'''
-
-
-p401InputLength = 2769
-p402InputLength = p401InputLength
-p1401InputLength = 1136
-p1402InputLength = 845
-inputLength = p1402InputLength
-'''
-^ CHANGE INPUT LENGTH ABOVE
-
-'''
+setParticipant(participant)
+waitRow80 = calculate80msToRow(frequency)
+waitRow300 = calculate300msToRow(frequency)
 
 
 
-'''
-
-Actual algorithm below!
 
 
-'''
 
 
-# need to check if 100Hz
+
+# Actual algorithm below!
+
+
 # programStartTime = time.time()
 while (row < inputLength):
     
@@ -137,7 +144,7 @@ while (row < inputLength):
         #if(angularVelocity > 100 or previousAngularVelocity > 100) :
         #if angularVelocity > 100 or previousAngularVelocity > 100 :
             data['MSW']['MSW Row'].append(row - 1)
-            data['MSW']['MSW Time'].append((row - 1)*((1/60)))
+            data['MSW']['MSW Time'].append((row - 1)*((1/frequency)))
             data['MSW']['MSW Angular Velocity'].append(previousAngularVelocity)
             
 
@@ -177,7 +184,7 @@ while (row < inputLength):
             then the next 'minima' is below the maxima & negative slope (so when it turns back to increasing)
             '''
             foundMinima = False
-            while row - startCount < 5 and not foundMinima:
+            while row - startCount < waitRow80 and not foundMinima:
                 
                 row += 1
                 
@@ -200,7 +207,7 @@ while (row < inputLength):
                     #
                     # search for immediate minima, previous diff is negative and diff is positive
                     maxima = angularVelocity
-                    while not foundMinima and row - startCount < 5 :
+                    while not foundMinima and row - startCount < waitRow80 :
                         # wait for next input = increase row
                         
                         previousAngularVelocity = angularVelocity
@@ -226,7 +233,7 @@ while (row < inputLength):
             # Code add here: previous angular velocity = HS
             # aka for my code: minima = HS
             data['HS']['HS Row'].append(minimaRow)
-            data['HS']['HS Time'].append(minimaRow*(1/60))
+            data['HS']['HS Time'].append(minimaRow*(1/frequency))
             data['HS']['HS Angular Velocity'].append(minima)
 
             MSW = 0
@@ -241,8 +248,6 @@ while (row < inputLength):
             previousDifference = difference
             continue
     
-        
-        
         else:
             #
             #currentTimeMiliSec = (time.time() * 1000) - (startTime * 1000)
@@ -255,14 +260,14 @@ while (row < inputLength):
             # 0.3/0.01666 = 18.07
             # 
             # article version has AV < -20 while I used -50:
-            if HS == 1 and angularVelocity < -50 and currentTime > 18 :
+            if HS == 1 and angularVelocity < -50 and currentTime > waitRow300 :
             # my version:
             #if HS == 1 and previousAngularVelocity > 0 and angularVelocity < 0 and currentTime > 18:
                 HS = 0
                 TO = 1
                 # add here: previousAngularVelocity = TO
                 data['TO']['TO Row'].append(row-1)
-                data['TO']['TO Time'].append((row-1)*((1/60)))
+                data['TO']['TO Time'].append((row-1)*((1/frequency)))
                 data['TO']['TO Angular Velocity'].append(previousAngularVelocity)
 
                 previousAngularVelocity = angularVelocity
@@ -303,10 +308,10 @@ ax.scatter(data['MSW'][ 'MSW Time'], data['MSW']['MSW Angular Velocity'], color=
 ax.scatter(data['HS'][ 'HS Time'], data['HS']['HS Angular Velocity'], color='b')
 ax.scatter(data['TO'][ 'TO Time'], data['TO']['TO Angular Velocity'], color='g')
 
-ax.set_xlabel('Time (row * 1/60)')
+ax.set_xlabel('Time')
 ax.set_ylabel('AngularVelocity')
 #ax.set_title('14-02 (actual data): MSW  < -150 + HS difference is > 0 + TO is < 0 while prev > 0')
-ax.set_title('14-02 with OG code but MSW with prevAV > 100 and TO maxima < -50')
+ax.set_title(participant + ' with OG code but MSW with prevAV > 100 and TO maxima < -50')
 plt.show()
 
 '''

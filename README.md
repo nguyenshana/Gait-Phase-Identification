@@ -3,19 +3,17 @@
 Algorithm to detect gait phase. Currently is based off of excel data with a frame rate of 60 Hz.
 Can be altered to detect in real time.
 
-## Setup to do before running the program
+## Setup to do before running the program (gyroscopeAlgorithm.py)
 
 
 ### Change Excel Data
 Remember to change (or at least check):
-1. Set staring row amount
-2. Set filepath variable
-3. Set column name 
-4. excel_data_df needs to read the new file
-5. Set input length
-6. Add chart title [the part that says: ax.set_title(...)]
+1. Change pathToFolder to your path to the excel files (line 31)
+2. Check if frequency is correct (line 88)
+3. Set participant name (line 94) (possible names are in 'trials' on line 38)
+4. Run the code
 
-If using other excel sheets that are formatted differently than Participant 14 Trial 1 & 2, you'll need to change the sheet name variable and the column number (I believe column numbering starts at 0) in excel_data_df.
+excel_data_df in the setParticipant function has excel sheet names and indexes.
 
 
 ## What I use to run the code
