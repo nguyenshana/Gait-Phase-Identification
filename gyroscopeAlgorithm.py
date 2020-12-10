@@ -62,11 +62,8 @@ def setParticipant(participant):
     #Columns are indexed from zero
     global excel_data_df
     if (participant != 'p1401' and participant != 'p1402') :
-        print('not part 14!')
-        print(participant)
         excel_data_df = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Segment Angular Velocity', usecols=[51])
     else:
-        print('part 14!')
         excel_data_df = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Segment Angular Velocity', usecols=[4])
     global inputLength
     inputLength = trials[participant][LASTROW_INDEX]
