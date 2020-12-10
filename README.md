@@ -3,10 +3,10 @@
 Algorithm to detect gait phase. Currently is based off of excel data with a frame rate of 60 Hz.
 Can be altered to detect in real time.
 
-## Setup to do before running the program (gyroscopeAlgorithm.py or multipleSignals.py)
+## Setup to do before running the program 
+#### (gyroscopeAlgorithm.py or multipleSignals.py)
 
 
-### Change Excel Data
 Remember to change (or at least check):
 1. Change pathToFolder to your path to the excel files (line 31)
 2. Check if frequency is correct (line 88)
