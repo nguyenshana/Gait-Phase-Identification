@@ -1,10 +1,13 @@
 # Gait-Phase-Identification
 
 Algorithm to detect gait phase. Currently is based off of excel data with a frame rate of 60 Hz.
-Can be altered to detect in real time.
+Can be altered to detect in real time. 
 
-## Setup to do before running the program (gyroscopeAlgorithm.py)
+## For multipleSignals.py:
 
+### Change the inputs for main() at the very bottom
+
+## For gyroscopeAlgorithm.py:
 
 ### Change Excel Data
 Remember to change (or at least check):
