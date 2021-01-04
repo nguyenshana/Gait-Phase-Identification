@@ -5,7 +5,7 @@ Can be altered to detect in real time.
 
 ## For (1) footAVyshankAVz.py and (2) multipleSignals.py:
 
-### Change the inputs for main() at the very bottom
+1. Change the inputs for main() at the very bottom
 
 ## For gyroscopeAlgorithm.py:
 
