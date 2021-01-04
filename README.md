@@ -3,7 +3,7 @@
 Algorithm to detect gait phase. Currently is based off of excel data with a frame rate of 60 Hz.
 Can be altered to detect in real time. 
 
-## For multipleSignals.py:
+## For (1) footAVyshankAVz.py and (2) multipleSignals.py:
 
 ### Change the inputs for main() at the very bottom
 
