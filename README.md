@@ -6,6 +6,7 @@ Can be altered to detect in real time.
 ## For (1) footAVyshankAVz.py and (2) multipleSignals.py:
 
 1. Change the inputs for main() at the very bottom
+2. Change 'pathToFolder' variable to have the correct path to your excel files
 
 ## For gyroscopeAlgorithm.py:
 
