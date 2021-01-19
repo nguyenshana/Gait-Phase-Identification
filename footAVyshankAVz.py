@@ -77,11 +77,9 @@ PROBLEM:
 
 (1) MSW conditions: foot AV y minima and negative and shank angular velocity < 0 within 50ms
 
-(2) HS conditions: if last MSW foot AV is positive, find foot AV max; 
-if last MSW foot AV is negative, then find foot AV min
+(2) HS conditions: find positive foot AV max
 
-(3) TO conditions: wait 300ms after HS; same conditions as HS except foot AV max needs to be > 1 and foot AV min needs
-to be < -1
+(3) TO conditions: wait 300ms after HS; find foot AV max that is > 1
 
 '''
 def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColumnName, excel_shank_AVz, excel_foot_AVy, 
@@ -107,6 +105,8 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
     
     # programStartTime = time.time()
     while (row < lastRow):
+        
+        #HELLO
         
         row += 1
     
@@ -191,33 +191,15 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
         # finding HS with Foot AV
         if MSW == 1:
             
-            MSWfootAV = excel_foot_AVy[footAVyColumnName].iloc[data['MSW']['MSW Row'][-1]]
-            
-            # MSW has a negative foot angular velocity y
-            if MSWfootAV < 0 :
-            
-                # find a maxima with positive foot AV
-                if previousFootAVDifference > 0 and footAVDifference < 0 and footAV > 0:
-                    data['HS']['HS Row'].append(row - 1)
-                    data['HS']['HS Time'].append((row - 1)*(1/frequency))
-                    data['HS']['HS Angular Velocity'].append(previousAngularVelocity)
-                    
-                    startTime = row
-                    HS = 1
-                    MSW = 0
-                    
-            else:
+            # find a maxima with positive foot AV
+            if previousFootAVDifference > 0 and footAVDifference < 0 and footAV > 0:
+                data['HS']['HS Row'].append(row - 1)
+                data['HS']['HS Time'].append((row - 1)*(1/frequency))
+                data['HS']['HS Angular Velocity'].append(previousAngularVelocity)
                 
-                # find a minima and negative foot AV
-                if previousFootAVDifference < 0 and footAVDifference > 0 and footAV < 0:
-                    data['HS']['HS Row'].append(row - 1)
-                    data['HS']['HS Time'].append((row - 1)*(1/frequency))
-                    data['HS']['HS Angular Velocity'].append(previousAngularVelocity)
-                    
-                    startTime = row
-                    HS = 1
-                    MSW = 0
-                    
+                startTime = row
+                HS = 1
+                MSW = 0
                     
             previousFootAV = footAV
             previousFootAVDifference = footAVDifference
@@ -229,26 +211,12 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
         # finding TO with Foot AV
         if HS == 1:
                 
-            MSWfootAV = excel_foot_AVy[footAVyColumnName].iloc[data['MSW']['MSW Row'][-1]] 
             currentTime = row - startTime
             
-            
-            # MSW has a negative foot angular velocity y
-            if MSWfootAV < 0 and currentTime > waitRow300 :
+            if currentTime > waitRow300 :
             
                 # find a maxima and positive foot AV
                 if previousFootAVDifference > 0 and footAVDifference < 0 and footAV > 1:
-                    data['TO']['TO Row'].append(row - 1)
-                    data['TO']['TO Time'].append((row - 1)*(1/frequency))
-                    data['TO']['TO Angular Velocity'].append(angularVelocity)
-                    
-                    TO = 1
-                    HS = 0
-                    
-            elif currentTime > waitRow300 :
-                
-                # find a minima and negative foot AV
-                if previousFootAVDifference < 0 and footAVDifference > 0 and footAV < -1:
                     data['TO']['TO Row'].append(row - 1)
                     data['TO']['TO Time'].append((row - 1)*(1/frequency))
                     data['TO']['TO Angular Velocity'].append(angularVelocity)
@@ -261,8 +229,6 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
             previousAngularVelocity = angularVelocity
             previousDifference = difference
             continue
-                
-                
             
         previousFootAV = footAV
         previousFootAVDifference = footAVDifference
@@ -341,22 +307,22 @@ if __name__ == "__main__":
     
     title = ': #2; MSW uses footAV Y < 0 + footAV Y min w/ shank AV > 0 within 50ms'
     
-    print('PARTICIPANT 4-01\n')
+    print('\nPARTICIPANT 4-01\n')
     main('p401', 60, title)
     
-    print('PARTICIPANT 4-02\n')
+    print('\nPARTICIPANT 4-02\n')
     main('p402', 60, title)
     
-    print('PARTICIPANT 28-01\n')
+    print('\nPARTICIPANT 28-01\n')
     main('p2801', 100, title)
     
-    print('PARTICIPANT 28-02\n')
+    print('\nPARTICIPANT 28-02\n')
     main('p2802', 100, title)
     
-    print('PARTICIPANT 3-03\n')
+    print('\nPARTICIPANT 3-03\n')
     main('p303', 60, title)
     
-    print('PARTICIPANT 31-03\n')
+    print('\nPARTICIPANT 31-03\n')
     main('p3103', 100, title)
     
     '''
