@@ -13,25 +13,23 @@ shankAVzColumnName = 'Right Lower Leg z'
 pathToFolder = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/'
 
 # Format of trials = participantKey : [rowValue, columnName, filePath, lastRow]
-START_ROW_INDEX = 0
-SHANK_AVZ_COLUMN_INDEX = 1
-FILEPATH_INDEX = 2
-LASTROW_INDEX = 3
+FORWARD_START_ROW = 0
+FORWARD_END_ROW = 1
+BACKWARD_START_ROW = 2
+BACKWARD_END_ROW = 3
+SHANK_AVZ_COLUMN_INDEX = 4
+FILEPATH_INDEX = 5
 trials = {
-        # old end was 2769
-        'p401' : [500, shankAVzColumnName, pathToFolder + 'Participant004-001.xlsx', 1528],
-        # old end was 2769
-        'p402' : [400, shankAVzColumnName, pathToFolder + 'Participant004-002.xlsx', 1429],
-        'p1401' : [50, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-001--Calculated_AV.xlsx', 1136],
-        'p1402' : [150, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-002--Calculated_AV.xlsx', 845],
-        #old end was 3800
-        'p2801' : [520, shankAVzColumnName, pathToFolder + 'Participant028-001.xlsx', 2108],
-        #old end was 4000
-        'p2802' : [700, shankAVzColumnName, pathToFolder + 'Participant028-002.xlsx', 2240],
-        #only halfway
-        'p303' : [400, shankAVzColumnName, pathToFolder + 'Participant003-003.xlsx', 1500],
-        #only halway
-        'p3103' : [490, shankAVzColumnName, pathToFolder + 'Participant031-003.xlsx', 3648],
+        'p401' : [500, 1528, 1594, 2695, shankAVzColumnName, pathToFolder + 'Participant004-001.xlsx'], #end 2695
+        'p402' : [400, 1429, 1513, 2446, shankAVzColumnName, pathToFolder + 'Participant004-002.xlsx'],
+        # turnaround point is unknown
+        'p1401' : [50, -1, -1, 1136, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-001--Calculated_AV.xlsx'],
+        # turnaround point is unknown
+        'p1402' : [150, -1, -1, 845, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-002--Calculated_AV.xlsx'],
+        'p2801' : [520, 2108, 2209, 3800, shankAVzColumnName, pathToFolder + 'Participant028-001.xlsx'],
+        'p2802' : [700, 2240, 2362, 4000, shankAVzColumnName, pathToFolder + 'Participant028-002.xlsx'],
+        'p303' : [400, 1500, 1588, 2638, shankAVzColumnName, pathToFolder + 'Participant003-003.xlsx'],
+        'p3103' : [490, 3648, 3845, 7186, shankAVzColumnName, pathToFolder + 'Participant031-003.xlsx'], #start at 3845
           }
 
 
@@ -39,9 +37,12 @@ trials = {
 
 # Input example: 'p401'
 def setParticipant(participant):
-    startRow = trials[participant][START_ROW_INDEX]
-    shankAVzColumnName = trials[participant][SHANK_AVZ_COLUMN_INDEX]
+    forwardStartRow = trials[participant][FORWARD_START_ROW]
+    forwardEndRow = trials[participant][FORWARD_END_ROW]
+    backwardStartRow = trials[participant][BACKWARD_START_ROW]
+    backwardEndRow = trials[participant][BACKWARD_END_ROW]
     
+    shankAVzColumnName = trials[participant][SHANK_AVZ_COLUMN_INDEX]
     excel_foot_AVy = None #Right foot y Angular Velocity
     footAVyColumnName = None
     
@@ -53,9 +54,8 @@ def setParticipant(participant):
     # Participant 14 uses the calculated AV
     else:
         excel_shank_AVz = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Segment Angular Velocity', usecols=[4])
-    endRow = trials[participant][LASTROW_INDEX]
     
-    return startRow, endRow, shankAVzColumnName, footAVyColumnName, excel_shank_AVz, excel_foot_AVy
+    return forwardStartRow, forwardEndRow, backwardStartRow, backwardEndRow, shankAVzColumnName, footAVyColumnName, excel_shank_AVz, excel_foot_AVy
 
 
 
@@ -70,12 +70,12 @@ def convertMilliSecToRow(frequency, milliseconds):
 '''
 Calculates gait events with Shank AV (MSW) and Foot AV (HS and TO)
 AV = Angular Velocity
-PROBLEM: 
-    - MSW only checks for one direction, so when person turns around (and footAV Y changes), then it won't be detected
+NOTES: 
+    - indicate 'forward' or 'backward' in the direction (backward will multiply footAVy by -1)
     - MSW 50ms is arbitrary (wanted to check 3 extra rows)
     - ALL EVENTS CURRENTLY ADD THE ROW BEFORE, so not exactly 'real time'
 
-(1) MSW conditions: foot AV y minima and negative and shank angular velocity < 0 within 50ms
+(1) MSW conditions: foot AV y minima and negative and shank angular velocity > 0 within 50ms
 
 (2) HS conditions: find positive foot AV max
 
@@ -83,7 +83,7 @@ PROBLEM:
 
 '''
 def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColumnName, excel_shank_AVz, excel_foot_AVy, 
-                                    frequency, waitRow80, waitRow300, waitRow50) :
+                                    frequency, direction, waitRow80, waitRow300, waitRow50) :
     
     previousAngularVelocity = -1000.0
     previousDifference = -1000.0
@@ -103,6 +103,12 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
     
     allexcel = { 'row' : [], 'value' : [] }
     
+    dir = 1
+    
+    if(direction == 'backward') :
+        dir = -1
+        
+    
     # programStartTime = time.time()
     while (row < lastRow):
         
@@ -112,7 +118,7 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
     
         angularVelocity = excel_shank_AVz[shankAVzColumnName].iloc[row] * 180 / math.pi
             
-        footAV = excel_foot_AVy[footAVyColumnName].iloc[row]
+        footAV = excel_foot_AVy[footAVyColumnName].iloc[row] * dir
         
         #allexcel['row'].append(row)
         #allexcel['value'].append(angularVelocity)
@@ -158,7 +164,7 @@ def getEventsWithFootAVShankAngVel(row, lastRow, shankAVzColumnName, footAVyColu
                 while (row - startRow < waitRow50 and notDone) :
                     row += 1
                     angularVelocity = excel_shank_AVz[shankAVzColumnName].iloc[row] * 180 / math.pi
-                    footAV = excel_foot_AVy[footAVyColumnName].iloc[row]
+                    footAV = excel_foot_AVy[footAVyColumnName].iloc[row] * dir
                     
                     difference = angularVelocity - previousAngularVelocity
                     footAVDifference = footAV - previousFootAV
@@ -257,41 +263,53 @@ Participant 3 = 60 Hz
 
 def main(participantName, frequency, title):
     
-    startRow, endRow, shankAVzColumnName, footAVyColumnName, excel_shank_AVz, excel_foot_AVy = setParticipant(participantName)
+    forwardStartRow, forwardEndRow, backwardStartRow, backwardEndRow, shankAVzColumnName, footAVyColumnName, excel_shank_AVz, excel_foot_AVy = setParticipant(participantName)
     waitRow80 = convertMilliSecToRow(frequency, 80)
     waitRow300 = convertMilliSecToRow(frequency, 300)
     waitRow50 = convertMilliSecToRow(frequency, 50)
+    
+    directions = ['forward', 'backward']
+    
+    
+    for i in range(2) :
+        direction = directions[i]
+        startRow = 0
+        endRow = 0
+        
+        if i == 0 :
+            startRow = forwardStartRow
+            endRow = forwardEndRow
+        else :
+            startRow = backwardStartRow
+            endRow = backwardEndRow
+            
+        print('\n', direction.capitalize())
       
-    gaitEvents = getEventsWithFootAVShankAngVel(startRow, endRow, shankAVzColumnName, footAVyColumnName, 
-                                                excel_shank_AVz, excel_foot_AVy, frequency, 
-                                                waitRow80, waitRow300, waitRow50)
+        gaitEvents = getEventsWithFootAVShankAngVel(startRow, endRow, 
+                                                       shankAVzColumnName, footAVyColumnName, 
+                                                       excel_shank_AVz, excel_foot_AVy, 
+                                                       frequency, direction,
+                                                       waitRow80, waitRow300, waitRow50)
     
-    MSWdf = DataFrame(gaitEvents[0]['MSW'],columns=['MSW Row', 'MSW Time', 'MSW Angular Velocity'])
-    print (MSWdf)
-    # MSWdf.plot(x ='MSW Time', y='MSW Angular Velocity', kind = 'scatter')
-    # plt.show()
-    
-    HSdf = DataFrame(gaitEvents[0]['HS'],columns=[ 'HS Row', 'HS Time', 'HS Angular Velocity'])
-    print (HSdf)
-    # HSdf.plot(x ='HS Time', y='HS Angular Velocity', kind = 'scatter')
-    # plt.show()
-    
-    TOdf = DataFrame(gaitEvents[0]['TO'],columns=[ 'TO Row', 'TO Time', 'TO Angular Velocity'])
-    print (TOdf)
-    # TOdf.plot(x ='TO Time', y='TO Angular Velocity', kind = 'scatter')
-    # plt.show()
-    
-    
-    fig=plt.figure()
-    ax=fig.add_axes([0,0,1,1])
-    ax.scatter(gaitEvents[0]['MSW'][ 'MSW Time'], gaitEvents[0]['MSW']['MSW Angular Velocity'], color='r')
-    ax.scatter(gaitEvents[0]['HS'][ 'HS Time'], gaitEvents[0]['HS']['HS Angular Velocity'], color='b')
-    ax.scatter(gaitEvents[0]['TO'][ 'TO Time'], gaitEvents[0]['TO']['TO Angular Velocity'], color='g')
-    
-    ax.set_xlabel('Time')
-    ax.set_ylabel('AngularVelocity')
-    ax.set_title(participantName + title)
-    plt.show()
+        MSWdf = DataFrame(gaitEvents[0]['MSW'],columns=['MSW Row', 'MSW Time', 'MSW Angular Velocity'])
+        print (MSWdf)
+        
+        HSdf = DataFrame(gaitEvents[0]['HS'],columns=[ 'HS Row', 'HS Time', 'HS Angular Velocity'])
+        print (HSdf)
+        
+        TOdf = DataFrame(gaitEvents[0]['TO'],columns=[ 'TO Row', 'TO Time', 'TO Angular Velocity'])
+        print (TOdf)
+        
+        fig=plt.figure()
+        ax=fig.add_axes([0,0,1,1])
+        ax.scatter(gaitEvents[0]['MSW'][ 'MSW Time'], gaitEvents[0]['MSW']['MSW Angular Velocity'], color='r')
+        ax.scatter(gaitEvents[0]['HS'][ 'HS Time'], gaitEvents[0]['HS']['HS Angular Velocity'], color='b')
+        ax.scatter(gaitEvents[0]['TO'][ 'TO Time'], gaitEvents[0]['TO']['TO Angular Velocity'], color='g')
+        
+        ax.set_xlabel('Time')
+        ax.set_ylabel('AngularVelocity')
+        ax.set_title(participantName + direction.capitalize() + title)
+        plt.show()
     
 
 
@@ -305,7 +323,7 @@ if __name__ == "__main__":
     
     #print("60 hz to 300ms = ", convertMilliSecToRow(60, 300), "100 hz to 300ms = ", convertMilliSecToRow(100, 300))
     
-    title = ': #2; MSW uses footAV Y < 0 + footAV Y min w/ shank AV > 0 within 50ms'
+    title = ': MSW uses footAV Y < 0 + footAV Y min w/ shank AV > 0 within 50ms'
     
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, title)
@@ -324,6 +342,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 31-03\n')
     main('p3103', 100, title)
+    
     
     '''
     ^ CHECK (1) PARTICIPANT NAME, 
