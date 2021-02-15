@@ -184,7 +184,7 @@ def getEventsWithFootAVShankAngVel(row, lastRow, hipThreshold,
 
         
         
-        # find minima + negative footAV for MSW
+        # find minima + negative footAV for MSW 
         if (previousFootAVDifference < 0 and footAVDifference > 0 and footAV < 0 and TO == 1) :
             
             if angularVelocity > 0 :
@@ -347,6 +347,7 @@ Participant 4 = 60 Hz
 Participant 14 = 60 Hz
 Participant 28 = 100Hz
 Participant 3 = 60 Hz
+Participant 31 = 100 Hz
 '''
 
 def main(participantName, frequency, hipThreshold):
@@ -414,9 +415,9 @@ if __name__ == "__main__":
     
     hipThreshold = -10
     
-    #print('\nPARTICIPANT 4-01\n')
-    #main('p401', 60, hipThreshold)
-    
+    print('\nPARTICIPANT 4-01\n')
+    main('p401', 60, hipThreshold)
+    '''
     print('\nPARTICIPANT 4-02\n')
     main('p402', 60, hipThreshold)
     
@@ -431,6 +432,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 31-03\n')
     main('p3103', 100, hipThreshold)
+    '''
     
     '''
     ^ CHECK (1) PARTICIPANT NAME, 
