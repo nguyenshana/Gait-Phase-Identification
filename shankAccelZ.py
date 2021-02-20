@@ -93,14 +93,8 @@ Calculates gait events with Shank AV (MSW) and Foot AV (HS and TO)
 AV = Angular Velocity
 NOTES: 
     - indicate 'forward' or 'backward' in the direction (backward will multiply footAVy by -1)
-    - MSW 50ms is arbitrary (wanted to check 3 extra rows)
-    - ALL EVENTS CURRENTLY ADD THE ROW BEFORE, so not exactly 'real time'
 
-(1) MSW conditions: foot AV y minima and negative and shank angular velocity > 0 within 50ms
-
-(2) HS conditions: find positive foot AV max
-
-(3) TO conditions: wait 300ms after HS; find foot AV max that is > 1
+HS conditions: find positive foot AV max
 
 '''
 def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
