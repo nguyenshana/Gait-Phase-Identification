@@ -10,7 +10,7 @@ To clean up:
 - participant 14 AV
 
 To do: 
-- time code to see how long it takes
+- try reducing graph code & organizing data structure to hold gait events
 
 Ideas:
 - just compare maximas greater than 4.9 [doesn't work]
@@ -23,56 +23,6 @@ Notes:
   until another HS is detected
 
 '''
-
-
-
-
-
-# Participant information below
-
-pathToFolder = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/'
-
-# Format of trials = participantKey : [rowValue, columnName, filePath, lastRow]
-FORWARD_START_ROW = 0
-FORWARD_END_ROW = 1
-BACKWARD_START_ROW = 2
-BACKWARD_END_ROW = 3
-FILEPATH_INDEX = 4
-trials = {
-        'p401' : [500, 1528, 1594, 2695, pathToFolder + 'Participant004-001.xlsx'], 
-        'p402' : [400, 1429, 1513, 2446, pathToFolder + 'Participant004-002.xlsx'],
-        # turnaround point is unknown
-        'p1401' : [50, -1, -1, 1136, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-001--Calculated_AV.xlsx'],
-        # turnaround point is unknown
-        'p1402' : [150, -1, -1, 845, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-002--Calculated_AV.xlsx'],
-        'p2801' : [520, 2108, 2209, 3800, pathToFolder + 'Participant028-001.xlsx'],
-        'p2802' : [700, 2240, 2362, 4000, pathToFolder + 'Participant028-002.xlsx'],
-        'p303' : [400, 1500, 1588, 2638, pathToFolder + 'Participant003-003.xlsx'],
-        'p3103' : [490, 3648, 3845, 7186, pathToFolder + 'Participant031-003.xlsx'], 
-          }
-
-
-
-
-# Input example: 'p401'
-def setParticipant(participant):
-    forwardStartRow = trials[participant][FORWARD_START_ROW]
-    forwardEndRow = trials[participant][FORWARD_END_ROW]
-    backwardStartRow = trials[participant][BACKWARD_START_ROW]
-    backwardEndRow = trials[participant][BACKWARD_END_ROW]
-    
-    shankAccelZColumnName = 'Right Lower Leg z'
-    # When adding another parameter, you need a sheet name and column name
-    
-    #Columns are indexed from zero
-    if (participant != 'p1401' and participant != 'p1402') :
-        hipZXYFlexionColumnName = 'Right Hip Flexion/Extension'
-        excel_shank_AccelZ = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Segment Acceleration', usecols=[51])
-        excel_hipZXY_flexion = pandas.read_excel(trials[participant][FILEPATH_INDEX], sheet_name='Joint Angles ZXY', usecols=[45])
-
-    # Doesn't check Participant 14
-    
-    return forwardStartRow, forwardEndRow, backwardStartRow, backwardEndRow, shankAccelZColumnName, hipZXYFlexionColumnName, excel_shank_AccelZ, excel_hipZXY_flexion
 
 
 
@@ -102,6 +52,7 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
                                    excel_shank_AccelZ, excel_hipZXY_flexion, 
                                    frequency, direction, waitRow80, waitRow300, waitRowArbitrary60) :
     
+    
     previousShankAccelZ = -1000.0
     previousShankAccelZDifference = -1000.0
     
@@ -109,10 +60,9 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
     
     HSStartRow = 10000
     
-    data = { 'MSW': {'Row': [], 'Time' : [], 'Angular Velocity' : []},
-    'HS' : {'Row': [], 'Time' : [], 'Angular Velocity' : []},
-    'TO' : {'Row': [], 'Time' : [], 'Angular Velocity' : []}
-    }
+    data = { 'MSW' : {'Row': [], 'Time' : [], 'Angular Velocity' : []},
+            'HS' : {'Row': [], 'Time' : [], 'Angular Velocity' : []},
+            'TO' : {'Row': [], 'Time' : [], 'Angular Velocity' : []}}
     
     #allexcel = { 'row' : [], 'value' : [] }
     
@@ -202,7 +152,6 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
                     if previousShankAccelZDifference < 0 and shankAccelZDifference > 0 :
                         # must be a negative minima, if not negative, then it's not right
                         if previousShankAccelZ < 0 :
-                            #print(row, " - ", previousShankAccelZDifference, " ", shankAccelZDifference)
                             data['HS']['Row'].append(row)
                             data['HS']['Time'].append((row)*(1/frequency))
                             data['HS']['Angular Velocity'].append(shankAccelZ)
@@ -247,9 +196,11 @@ def graph(data, forwardEnd, backwardStart, participantName, title, xLabel, yLabe
     # adding backward values to forward values
     for i in range(len(dataTypesNames)) :
         
+        
         # print the gait events
         if len(dataTypesNames) == 3:
             print( dataTypesNames[i], "\n", DataFrame(data[dataTypesNames[i]], columns = columnNames) )
+        
             
         ax.scatter(data[dataTypesNames[i]][columnNames[1]], data[dataTypesNames[i]][columnNames[2]], color=colors[i])
     
@@ -312,7 +263,41 @@ Participant 31 = 100 Hz
 
 def main(participantName, frequency, hipThreshold):
     
-    forwardStartRow, forwardEndRow, backwardStartRow, backwardEndRow, shankAccelZColumnName, hipZXYFlexionColumnName, excel_shank_AccelZ, excel_hipZXY_flexion = setParticipant(participantName)
+    # Participant information below
+    pathToFolder = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/'
+    
+    FORWARD_START_ROW = 0
+    FORWARD_END_ROW = 1
+    BACKWARD_START_ROW = 2
+    BACKWARD_END_ROW = 3
+    FILEPATH_INDEX = 4
+    trials = {
+            'p401' : [500, 1528, 1594, 2695, pathToFolder + 'Participant004-001.xlsx'], 
+            'p402' : [400, 1429, 1513, 2446, pathToFolder + 'Participant004-002.xlsx'],
+            # turnaround point is unknown
+            'p1401' : [50, -1, -1, 1136, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-001--Calculated_AV.xlsx'],
+            # turnaround point is unknown
+            'p1402' : [150, -1, -1, 845, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-002--Calculated_AV.xlsx'],
+            'p2801' : [520, 2108, 2209, 3800, pathToFolder + 'Participant028-001.xlsx'],
+            'p2802' : [700, 2240, 2362, 4000, pathToFolder + 'Participant028-002.xlsx'],
+            'p303' : [400, 1500, 1588, 2638, pathToFolder + 'Participant003-003.xlsx'],
+            'p3103' : [490, 3648, 3845, 7186, pathToFolder + 'Participant031-003.xlsx'], 
+              }
+    
+    forwardStartRow = trials[participantName][FORWARD_START_ROW]
+    forwardEndRow = trials[participantName][FORWARD_END_ROW]
+    backwardStartRow = trials[participantName][BACKWARD_START_ROW]
+    backwardEndRow = trials[participantName][BACKWARD_END_ROW]
+    
+    # When adding another parameter, you need a sheet name and column name
+    shankAccelZColumnName = 'Right Lower Leg z'
+    hipZXYFlexionColumnName = 'Right Hip Flexion/Extension'
+    
+    # Excel columns are indexed from zero
+    excel_shank_AccelZ = pandas.read_excel(trials[participantName][FILEPATH_INDEX], sheet_name='Segment Acceleration', usecols=[51])
+    excel_hipZXY_flexion = pandas.read_excel(trials[participantName][FILEPATH_INDEX], sheet_name='Joint Angles ZXY', usecols=[45])
+
+    
     waitRow80 = convertMilliSecToRow(frequency, 80)
     waitRow300 = convertMilliSecToRow(frequency, 300)
     waitRowArbitrary60 = convertMilliSecToRow(frequency, 60)
@@ -328,6 +313,7 @@ def main(participantName, frequency, hipThreshold):
     directions = ['forward', 'backward']
     
     for i in range(2) :
+        
         direction = directions[i]
         startRow = 0
         endRow = 0
@@ -342,22 +328,23 @@ def main(participantName, frequency, hipThreshold):
             backwardStart = startRow
             
         print('\n', direction.capitalize())
-      
+        
         gaitEvents, hipData = getEventsWithShankAccelZ(startRow, endRow, hipThreshold,
                                                        shankAccelZColumnName, hipZXYFlexionColumnName,
                                                        excel_shank_AccelZ, excel_hipZXY_flexion, 
                                                        frequency, direction,
                                                        waitRow80, waitRow300, waitRowArbitrary60)
+       
         bothGaitDirections.append(gaitEvents)
         allHipData.append(hipData)
         
+    
     # graph gait events
     graphCombined(bothGaitDirections, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
                   participantName, gaitEventsTitle, 
-                  'Time (s)', 'Shank AV z', 
+                  'Time (s)', 'Shank Accel z', 
                   ['MSW', 'HS', 'TO'], 
                   ['Row', 'Time', 'Angular Velocity'], ['r', 'g', 'b'])
-    
     
     # graph hip angles
     graphCombined(allHipData, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
@@ -376,10 +363,10 @@ def main(participantName, frequency, hipThreshold):
 if __name__ == "__main__":
     
     hipThreshold = -10
-    '''
+    
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, hipThreshold)
-    '''
+    
     print('\nPARTICIPANT 4-02\n')
     main('p402', 60, hipThreshold)
     
