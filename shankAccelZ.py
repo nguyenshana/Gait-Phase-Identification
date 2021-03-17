@@ -10,28 +10,19 @@ import matplotlib.pyplot as plt
 To clean up:
 - participant 14 AV
 
-Questions:
-- what signals can we look at for patterns?
-- can we just use hip angle to get HS and TO?
-
 Possible issues:
 - some angular velocity might not have the prior peaks
 - some gait cycles might not meet threshold
 - wait time to find the minima is arbitrary
 
 
-To do: 
-- test without excluding the turnaround part
-
 Ideas:
 - just compare maximas greater than 4.9 [doesn't work] 
 - another check: upper leg z is increasing? [nope] and maybe negative 
 
 Notes:
-- still keeping forward and backward separate to ignore the noise during the turnaround, 
-  but maybe this isn't necessary? I can check this afterwards when the algorithm works properly
-- Biofeedback starts checking 300ms after HS is detected, and doesn't stop checking hip angle 
-  until another HS is detected
+- 300ms after HS is detected, biofeedback starts checking hip angles and code 
+  searches for next HS
 
 '''
 
@@ -116,7 +107,7 @@ NOTES:
 HS conditions:
     - Keep track of all maximas > 2 
     - If maxima is > 4.9 (half G) and taller than previous maxima, then during the waitRowArbitrary 
-      time frame, look for a negative minima where hipAngle is positive, and mark the next row was HS
+      time frame, look for a negative minima, and mark the next row was HS
     - Wait 300ms (do nothing) before looking for next heel strike and look at hip angle
 '''
 def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
@@ -215,7 +206,7 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
                     addData(hipData, 'All Hip Values', [row, row/frequency, hipAngle])
          
                     # Found a minima
-                    if previousShankAccelZDifference < 0 and shankAccelZDifference > 0 and hipAngle > 0:
+                    if previousShankAccelZDifference < 0 and shankAccelZDifference > 0:
                         
                          # must be a negative minima, if not negative, then it's not HS and end the loop
                         if previousShankAccelZ < 0 :
@@ -345,11 +336,38 @@ def main(participantName, frequency, hipThreshold):
     
     
     
-    gaitEventsTitle = 'Shank Acceleration z (w/ 300ms max)'
+    gaitEventsTitle = 'Shank Acceleration z'
     bothGaitDirections = {}
     
     hipTitle = 'Hip ZXY Flexion/Extension'
     allHipData = {}
+    
+    bothGaitDirections, allHipData = getEventsWithShankAccelZ(forwardStartRow, backwardEndRow, hipThreshold,
+                                                       shankAccelZColumnName, hipZXYFlexionColumnName,
+                                                       excel_shank_AccelZ, excel_hipZXY_flexion, 
+                                                       frequency, 'start to end',
+                                                       waitRow80, waitRow300, waitRowArbitrary60)
+    
+    # graph gait events
+    graph(bothGaitDirections, forwardEndRow/frequency, backwardStartRow/frequency, 
+                  participantName, gaitEventsTitle, 
+                  'Time (s)', 'Shank Accel z', 
+                  ['all', 'HS'], 
+                  ['Row', 'Time', 'Angular Velocity'], ['g', 'r', 'b'])
+    
+    # graph hip angles
+    graph(allHipData, forwardEndRow/frequency, backwardStartRow/frequency, 
+                  participantName, hipTitle, 
+                  'Time (s)', 'Hip ZXY Flexion/Extension', 
+                  ['All Hip Values', 'Crossed Threshold'], 
+                  ['Row', 'Time', 'Joint Angle'], ['g', 'b'])
+    
+    '''
+    ** 
+    *
+    This commented-out code splits input data into forward and backward chunks, removing the turnaround part 
+    *
+    **
     
     forwardEnd = 0
     backwardStart = 0
@@ -384,7 +402,7 @@ def main(participantName, frequency, hipThreshold):
         else:
             combineForwardAndBackward(gaitEvents, bothGaitDirections)
             combineForwardAndBackward(hipData, allHipData)
-        
+    
     
     # graph gait events
     graph(bothGaitDirections, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
@@ -399,6 +417,7 @@ def main(participantName, frequency, hipThreshold):
                   'Time (s)', 'Hip ZXY Flexion/Extension', 
                   ['All Hip Values', 'Crossed Threshold'], 
                   ['Row', 'Time', 'Joint Angle'], ['g', 'b'])
+    '''
     
 
 
