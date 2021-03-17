@@ -5,15 +5,26 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 
 
+
 '''
 To clean up:
 - participant 14 AV
 
+Questions:
+- what signals can we look at for patterns?
+- can we just use hip angle to get HS and TO?
+
+Possible issues:
+- some angular velocity might not have the prior peaks
+- some gait cycles might not meet threshold
+- wait time to find the minima is arbitrary
+
+
 To do: 
-- try reducing graph code & organizing data structure to hold gait events
+- test without excluding the turnaround part
 
 Ideas:
-- just compare maximas greater than 4.9 [doesn't work]
+- just compare maximas greater than 4.9 [doesn't work] 
 - another check: upper leg z is increasing? [nope] and maybe negative 
 
 Notes:
@@ -26,10 +37,71 @@ Notes:
 
 
 
+
 # Convert data collection frequency to milliseconds
 def convertMilliSecToRow(frequency, milliseconds):
     seconds = milliseconds / 1000
     return seconds * frequency
+
+
+
+'''
+Graphs for one direction
+
+Inputs:
+    - data: a dictionary that holds dictionary values
+    e.g.) { 'MSW' : { 'Row' : [0,1,2..], 'Time' : [...] },
+           'HS' : { 'Row' : [0,1,2..], 'Time' : [...] } }
+    - forwardEnd: the ending time of the forward phase
+    - backwardStart: the start time of the backward phase
+    - title: title of the graph
+    - xLabel: label for the x-axis
+    - yLabel: label for the y-axis
+    - dataTypesNames: array of 'parent' dictionary keys (e.g. MSW and HS above)
+        - 2nd value will be the x-axis and 3rd value will be the y-axis
+    - columnNames: array of 'child' dictionary keys (e.g. Row and Time above)
+    - colors: array of color values
+'''
+def graph(data, forwardEnd, backwardStart, participantName, title, xLabel, yLabel, dataTypesNames, columnNames, colors) :
+    
+    fig=plt.figure()
+    ax=fig.add_axes([0,0,1,1])
+    
+    for i in range(len(dataTypesNames)) :
+        
+        # print only the gait event data, not hip angle
+        if dataTypesNames[i] == 'HS':
+            print( participantName, " - ", dataTypesNames[i], "\n", DataFrame(data['HS'], columns = columnNames) )
+        
+        ax.scatter(data[dataTypesNames[i]][columnNames[1]], data[dataTypesNames[i]][columnNames[2]], color=colors[i])
+    
+    ax.set_xlabel(xLabel)
+    ax.set_ylabel(yLabel)
+    ax.set_title(participantName + " " +  title)
+    plt.axvline(x = (forwardEnd + backwardStart) / 2)
+    plt.show()
+    
+    
+
+'''
+Adds data to a dictionary dataset
+
+Inputs:
+    - data: a dictionary that holds dictionary values
+    e.g.) { 'MSW' : { 'Row' : [0,1,2..], 'Time' : [...] },
+           'HS' : { 'Row' : [0,1,2..], 'Time' : [...] } }
+    - key: main key in the dictionary 
+    e.g.) 'MSW' and 'HS' in the example above
+    - arrayOfInputs: array of data to add
+    e.g.) [1, 2] would add 1 to 'Row' and 2 to 'Time'
+'''
+def addData(data, key, arrayOfInputs):
+    
+    i = 0
+    for subkey in data[key]:
+        data[key][subkey].append(arrayOfInputs[i])
+        i += 1
+    return data
 
 
 
@@ -44,8 +116,8 @@ NOTES:
 HS conditions:
     - Keep track of all maximas > 2 
     - If maxima is > 4.9 (half G) and taller than previous maxima, then during the waitRowArbitrary 
-      time frame, look for a negative minima, and mark the next row was HS
-
+      time frame, look for a negative minima where hipAngle is positive, and mark the next row was HS
+    - Wait 300ms (do nothing) before looking for next heel strike and look at hip angle
 '''
 def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
                                    shankAccelZColumnName, hipZXYFlexionColumnName,
@@ -60,11 +132,8 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
     
     HSStartRow = 10000
     
-    data = { 'MSW' : {'Row': [], 'Time' : [], 'Angular Velocity' : []},
-            'HS' : {'Row': [], 'Time' : [], 'Angular Velocity' : []},
-            'TO' : {'Row': [], 'Time' : [], 'Angular Velocity' : []}}
-    
-    #allexcel = { 'row' : [], 'value' : [] }
+    data = { 'all' : {'Row': [], 'Time' : [], 'Angular Velocity' : []},
+            'HS' : {'Row': [], 'Time' : [], 'Angular Velocity' : []} }
     
     hipData = { 'All Hip Values' : { 'Row' : [], 'Time' : [], 'Joint Angle' : [] },
                'Crossed Threshold' : { 'Row' : [], 'Time' : [], 'Joint Angle' : [] }
@@ -83,11 +152,8 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
         hipAngle = excel_hipZXY_flexion[hipZXYFlexionColumnName].iloc[row]
         
         
-        #allexcel['row'].append(row)
-        #allexcel['value'].append(angularVelocity)
-        hipData['All Hip Values']['Row'].append(row)
-        hipData['All Hip Values']['Time'].append(row * (1/frequency))
-        hipData['All Hip Values']['Joint Angle'].append(hipAngle)
+        addData(data, 'all', [row, row/frequency, shankAccelZ])
+        addData(hipData, 'All Hip Values', [row, row/frequency, hipAngle])
         
         
         ''' Start setup section '''
@@ -109,32 +175,25 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
         ''' Check hip angle '''
         
         
-        # 300ms after HS, check hip angle until the next HS occurs
-        if row - HSStartRow > waitRow300 :
+        if hipAngle < hipThreshold and biofeedbackStatus == 'OFF' :
+            biofeedbackStatus = 'ON'
+            print("BIOFEEDBACK ", biofeedbackStatus, " - ", row)
+            addData(hipData, 'Crossed Threshold', [row, row/frequency, hipAngle])
             
-            if hipAngle < hipThreshold and biofeedbackStatus == 'OFF' :
-                biofeedbackStatus = 'ON'
-                print("BIOFEEDBACK ", biofeedbackStatus, " - ", row)
-                hipData['Crossed Threshold']['Row'].append(row)
-                hipData['Crossed Threshold']['Time'].append(row * (1/frequency))
-                hipData['Crossed Threshold']['Joint Angle'].append(hipAngle)
-                
-            # Just for graphing/collecting data
-            elif hipAngle < hipThreshold and biofeedbackStatus == 'ON' :
-                hipData['Crossed Threshold']['Row'].append(row)
-                hipData['Crossed Threshold']['Time'].append(row * (1/frequency))
-                hipData['Crossed Threshold']['Joint Angle'].append(hipAngle)
-                
-            elif hipAngle > hipThreshold and biofeedbackStatus == 'ON' :
-                biofeedbackStatus = 'OFF'
-                print("BIOFEEDBACK ", biofeedbackStatus, " - ", row)
+        # Just for graphing/collecting data
+        elif hipAngle < hipThreshold and biofeedbackStatus == 'ON' :
+            addData(hipData, 'Crossed Threshold', [row, row/frequency, hipAngle])
+            
+        elif hipAngle > hipThreshold and biofeedbackStatus == 'ON' :
+            biofeedbackStatus = 'OFF'
+            print("BIOFEEDBACK ", biofeedbackStatus, " - ", row)
         
 
         
         # Might have a high overhead since we are reassigning it at a lot of maximas?
         # Maxima greater than 2
         if previousShankAccelZDifference > 0 and shankAccelZDifference < 0 and previousShankAccelZ > 2 :
-                
+            
             # Greater than 4.9 and is > to previous max --> set previous max value and look for HS
             if previousShankAccelZ > 4.9 and previousShankAccelZ > previousShankAccelZMax :
                 
@@ -143,29 +202,62 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
                 startRow = row
                 notDone = True
                 
+                # Search for waitRowArbirtrary time frame for a negative minima
                 while row - startRow < waitRowArbitrary60 and notDone :
                     row += 1
                     shankAccelZ = excel_shank_AccelZ[shankAccelZColumnName].iloc[row]
                     
                     shankAccelZDifference = shankAccelZ - previousShankAccelZ
+                    
+                    hipAngle = excel_hipZXY_flexion[hipZXYFlexionColumnName].iloc[row]
+                    
+                    addData(data, 'all', [row, row/frequency, shankAccelZ])
+                    addData(hipData, 'All Hip Values', [row, row/frequency, hipAngle])
          
-                    if previousShankAccelZDifference < 0 and shankAccelZDifference > 0 :
-                        # must be a negative minima, if not negative, then it's not right
+                    # Found a minima
+                    if previousShankAccelZDifference < 0 and shankAccelZDifference > 0 and hipAngle > 0:
+                        
+                         # must be a negative minima, if not negative, then it's not HS and end the loop
                         if previousShankAccelZ < 0 :
-                            data['HS']['Row'].append(row)
-                            data['HS']['Time'].append((row)*(1/frequency))
-                            data['HS']['Angular Velocity'].append(shankAccelZ)
+                            
+                            addData(data, 'HS', [row, row/frequency, shankAccelZ])
                             
                             HSStartRow = row
+                            
+                            previousShankAccelZ = shankAccelZ
+                            previousShankAccelZDifference = shankAccelZDifference
+                            
+                            # Wait 300 ms before searching for next HS
+                            # End one row beforehand so then it can go back to the main loop and increment by 1 row
+                            while row - HSStartRow < waitRow300 - 1 and row < lastRow:
+                                row += 1
+                                
+                                shankAccelZ = excel_shank_AccelZ[shankAccelZColumnName].iloc[row]
+                    
+                                shankAccelZDifference = shankAccelZ - previousShankAccelZ
+                                
+                                hipAngle = excel_hipZXY_flexion[hipZXYFlexionColumnName].iloc[row]
+                                
+                                addData(data, 'all', [row, row/frequency, shankAccelZ])
+                                addData(hipData, 'All Hip Values', [row, row/frequency, hipAngle])
+                                
+                                # Still add maximas > 2
+                                if previousShankAccelZDifference > 0 and shankAccelZDifference < 0 and previousShankAccelZ > 2:
+                                    previousShankAccelZMax = previousShankAccelZ 
+                                
+                                previousShankAccelZ = shankAccelZ
+                                previousShankAccelZDifference = shankAccelZDifference
+                            
                 
                         notDone = False
                     
-                    previousShankAccelZ = shankAccelZ
-                    previousShankAccelZDifference = shankAccelZDifference
+                    else:
+                        previousShankAccelZ = shankAccelZ
+                        previousShankAccelZDifference = shankAccelZDifference
                 
                 continue
             
-            else :
+            else:
                 previousShankAccelZMax = previousShankAccelZ 
 
 
@@ -176,80 +268,28 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
     
     
     
+
+
+
     
     
     
 '''
-Graphs for one direction
+Combine forward and backward data
 
 Inputs:
-    - data: a dictionary that holds dictionary values
+    - data: a dictionary that holds dictionary values for either forward or backward
     e.g.) { 'MSW' : { 'Row' : [0,1,2..], 'Time' : [...] },
            'HS' : { 'Row' : [0,1,2..], 'Time' : [...] } }
-    - see documentation for graphCombined(...) for other input parameters
+    - alldata: similar format as above, but will hold both forward and backward data
 '''
-def graph(data, forwardEnd, backwardStart, participantName, title, xLabel, yLabel, dataTypesNames, columnNames, colors) :
+def combineForwardAndBackward(data, alldata):
     
-    fig=plt.figure()
-    ax=fig.add_axes([0,0,1,1])
-    
-    # adding backward values to forward values
-    for i in range(len(dataTypesNames)) :
-        
-        
-        # print the gait events
-        if len(dataTypesNames) == 3:
-            print( dataTypesNames[i], "\n", DataFrame(data[dataTypesNames[i]], columns = columnNames) )
-        
+    for key in alldata:
+        for subkey in data[key]:
+            alldata[key][subkey].extend(data[key][subkey])
             
-        ax.scatter(data[dataTypesNames[i]][columnNames[1]], data[dataTypesNames[i]][columnNames[2]], color=colors[i])
-    
-    ax.set_xlabel(xLabel)
-    ax.set_ylabel(yLabel)
-    ax.set_title(participantName + " " +  title)
-    plt.axvline(x = (forwardEnd + backwardStart) / 2)
-    plt.show()
-    
-    
-    
-'''
-Graphs both forward and backward
-
-Inputs:
-    - allData: an array of length 2 with dictionary values that hold a dictionary
-    e.g.) allData = [ {
-                        'MSW' : { 'Row' : [0,1,2..], 'Time' : [...] },
-                        'HS' : { 'Row' : [0,1,2..], 'Time' : [...] } 
-                      }, # forward values
-                      {
-                        'MSW' : { 'Row' : [0,1,2..], 'Time' : [...] },
-                        'HS' : { 'Row' : [0,1,2..], 'Time' : [...] } 
-                      } # backward values
-                        ]
-    - forwardEnd: the ending time of the forward phase
-    - backwardStart: the start time of the backward phase
-    - title: title of the graph
-    - xLabel: label for the x-axis
-    - yLabel: label for the y-axis
-    - dataTypesNames: array of 'parent' dictionary keys (e.g. MSW and HS above)
-        - 2nd value will be the x-axis and 3rd value will be the y-axis
-    - columnNames: array of 'child' dictionary keys (e.g. Row and Time above)
-    - colors: array of color values
-
-'''
-def graphCombined(allData, forwardEnd, backwardStart, participantName, title, xLabel, yLabel, dataTypesNames, columnNames, colors) :
-    
-    combinedData = allData[0]
-
-    # adding backward values to forward values
-    for i in range(len(dataTypesNames)) :
-        
-        for columnName in columnNames : 
             
-            combinedData[dataTypesNames[i]][columnName].extend(allData[1][dataTypesNames[i]][columnName])
-    
-    graph(combinedData, forwardEnd, backwardStart, participantName, title, xLabel, yLabel, dataTypesNames, columnNames, colors)
-    
     
 
 '''
@@ -297,16 +337,19 @@ def main(participantName, frequency, hipThreshold):
     excel_shank_AccelZ = pandas.read_excel(trials[participantName][FILEPATH_INDEX], sheet_name='Segment Acceleration', usecols=[51])
     excel_hipZXY_flexion = pandas.read_excel(trials[participantName][FILEPATH_INDEX], sheet_name='Joint Angles ZXY', usecols=[45])
 
+
     
     waitRow80 = convertMilliSecToRow(frequency, 80)
     waitRow300 = convertMilliSecToRow(frequency, 300)
     waitRowArbitrary60 = convertMilliSecToRow(frequency, 60)
     
-    gaitEventsTitle = 'Shank Acceleration z'
-    bothGaitDirections = []
+    
+    
+    gaitEventsTitle = 'Shank Acceleration z (w/ 300ms max)'
+    bothGaitDirections = {}
     
     hipTitle = 'Hip ZXY Flexion/Extension'
-    allHipData = []
+    allHipData = {}
     
     forwardEnd = 0
     backwardStart = 0
@@ -335,19 +378,23 @@ def main(participantName, frequency, hipThreshold):
                                                        frequency, direction,
                                                        waitRow80, waitRow300, waitRowArbitrary60)
        
-        bothGaitDirections.append(gaitEvents)
-        allHipData.append(hipData)
+        if i == 0:
+            bothGaitDirections = gaitEvents
+            allHipData = hipData
+        else:
+            combineForwardAndBackward(gaitEvents, bothGaitDirections)
+            combineForwardAndBackward(hipData, allHipData)
         
     
     # graph gait events
-    graphCombined(bothGaitDirections, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
+    graph(bothGaitDirections, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
                   participantName, gaitEventsTitle, 
                   'Time (s)', 'Shank Accel z', 
-                  ['MSW', 'HS', 'TO'], 
-                  ['Row', 'Time', 'Angular Velocity'], ['r', 'g', 'b'])
+                  ['all', 'HS'], 
+                  ['Row', 'Time', 'Angular Velocity'], ['g', 'r', 'b'])
     
     # graph hip angles
-    graphCombined(allHipData, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
+    graph(allHipData, forwardEnd * (1/frequency), backwardStart * (1/frequency), 
                   participantName, hipTitle, 
                   'Time (s)', 'Hip ZXY Flexion/Extension', 
                   ['All Hip Values', 'Crossed Threshold'], 
@@ -386,4 +433,5 @@ if __name__ == "__main__":
     '''
     ^ CHECK (1) PARTICIPANT NAME, 
             (2) FREQUENCY
+            (3) in main(), change the pathToFolder
     '''
