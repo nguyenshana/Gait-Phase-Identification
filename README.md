@@ -3,10 +3,10 @@
 Algorithm to detect gait phase. Currently is based off of excel data with a frame rate of 60 Hz.
 Can be altered to detect in real time. 
 
-## For (1) footAVyshankAVz.py and (2) multipleSignals.py:
+## For (1) footAVyshankAVz.py, (2) multipleSignals.py, and (3) shankAccelZ.py:
 
-1. Change the inputs for main() at the very bottom
-2. Change 'pathToFolder' variable to have the correct path to your excel files
+1. Can change the inputs for main() at the very bottom
+2. Change 'pathToFolder' variable in main() to have the correct path to your excel files
 
 ## For gyroscopeAlgorithm.py:
 
