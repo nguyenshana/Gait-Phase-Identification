@@ -86,33 +86,34 @@ def main(participantName, frequency, hipThreshold):
             'p3103' : [490, 3648, 3845, 7186, pathToFolder + 'Participant031-003.xlsx'], 
               }
     
-    # Excel columns are indexed from zero
-    excel_quat_L5_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[5])
-    excel_quat_L5_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[6])
-    excel_quat_L5_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[7])
-    excel_quat_L5_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[8])
+    print("start getting excel")
     
-    print("got L5 quat columns")
+    excel_quat_pelvis_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+                                        sheet_name='Segment Orientation - Quat', 
+                                        usecols=[1])
+    excel_quat_pelvis_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+                                        sheet_name='Segment Orientation - Quat', 
+                                        usecols=[2])
+    excel_quat_pelvis_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+                                        sheet_name='Segment Orientation - Quat', 
+                                        usecols=[3])
+    excel_quat_pelvis_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+                                        sheet_name='Segment Orientation - Quat', 
+                                        usecols=[4])
     
-    # thigh = Right Upper Leg
-    excel_quat_thigh_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+    print("got pelvis quat columns")
+    
+    # Right Upper Leg
+    excel_quat_upperLeg_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
                                         sheet_name='Segment Orientation - Quat', 
                                         usecols=[61])
-    excel_quat_thigh_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+    excel_quat_upperLeg_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
                                         sheet_name='Segment Orientation - Quat', 
                                         usecols=[62])
-    excel_quat_thigh_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+    excel_quat_upperLeg_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
                                         sheet_name='Segment Orientation - Quat', 
                                         usecols=[63])
-    excel_quat_thigh_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
+    excel_quat_upperLeg_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
                                         sheet_name='Segment Orientation - Quat', 
                                         usecols=[64])
     # XSENS hip angle
@@ -120,7 +121,7 @@ def main(participantName, frequency, hipThreshold):
                                              sheet_name='Joint Angles ZXY', 
                                              usecols=[45])
 
-    print("got thigh quat columns")
+    print("got upper leg (thigh) quat columns")
     
     
     row = trials[participantName][FORWARD_START_ROW]
@@ -132,43 +133,37 @@ def main(participantName, frequency, hipThreshold):
     
     while(row < lastRow):
         
-        #print("#", row)
+        pelvis_q0 = excel_quat_pelvis_q0['Pelvis q0'].iloc[row]
+        pelvis_q1 = excel_quat_pelvis_q1['Pelvis q1'].iloc[row]
+        pelvis_q2 = excel_quat_pelvis_q2['Pelvis q2'].iloc[row]
+        pelvis_q3 = excel_quat_pelvis_q3['Pelvis q3'].iloc[row]
         
-        l5w = excel_quat_L5_q0['L5 q0'].iloc[row]
-        l5x = excel_quat_L5_q1['L5 q1'].iloc[row]
-        l5y = excel_quat_L5_q2['L5 q2'].iloc[row]
-        l5z = excel_quat_L5_q3['L5 q3'].iloc[row]
         
-        t5w = excel_quat_thigh_q0['Right Upper Leg q0'].iloc[row]
-        t5x = excel_quat_thigh_q1['Right Upper Leg q1'].iloc[row]
-        t5y = excel_quat_thigh_q2['Right Upper Leg q2'].iloc[row]
-        t5z = excel_quat_thigh_q3['Right Upper Leg q3'].iloc[row]
+        upperLeg_q0 = excel_quat_upperLeg_q0['Right Upper Leg q0'].iloc[row]
+        upperLeg_q1 = excel_quat_upperLeg_q1['Right Upper Leg q1'].iloc[row]
+        upperLeg_q2 = excel_quat_upperLeg_q2['Right Upper Leg q2'].iloc[row]
+        upperLeg_q3 = excel_quat_upperLeg_q3['Right Upper Leg q3'].iloc[row]
         
         actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
         
-        q_L5 = pyq.Quaternion(l5w,l5x,l5y,l5z)
-        q_upperLeg = pyq.Quaternion(t5w,t5x,t5y,t5z)
+        q_L5 = pyq.Quaternion(pelvis_q0,pelvis_q1,pelvis_q2,pelvis_q3)
+        q_upperLeg = pyq.Quaternion(upperLeg_q0,upperLeg_q1,upperLeg_q2,upperLeg_q3)
         
-        # Get the 3D difference between these two orientations
-        qd = q_L5.conjugate * q_upperLeg
+        # Get the difference between these two orientations
+        q_hipAngle = q_L5.conjugate * q_upperLeg
         
-        # Calculate Euler angles from this difference quaternion
-        phi   = math.atan2( 2 * (qd.w * qd.x + qd.y * qd.z), 1 - 2 * (qd.x**2 + qd.y**2) )
-        theta = math.asin ( 2 * (qd.w * qd.y - qd.z * qd.x) )
-        psi   = math.atan2( 2 * (qd.w * qd.z + qd.x * qd.y), 1 - 2 * (qd.y**2 + qd.z**2) )
+        # Euler Angle
+        theta = math.asin ( 2 * (q_hipAngle.w * q_hipAngle.y - q_hipAngle.z * q_hipAngle.x) )
         
         addData(hipData, 'Calculated', [row, -theta*180.0/math.pi])
         addData(hipData, 'Actual', [row, actualHip])
         
-        print("row", row, -theta*180.0/math.pi)
-        
         row += 1
-        
         
         
    # graph hip angles
     graph(hipData, trials[participantName][FORWARD_END_ROW], trials[participantName][BACKWARD_START_ROW], 
-                  participantName, 'Hip Calculations theta', 
+                  participantName, 'Hip Calculations (g) & Actual Hip Angle (b)', 
                   'Row', 'Hip ZXY Flexion/Extension', 
                   ['Calculated','Actual'], 
                   ['Row', 'Joint Angle'], ['g','b'])
