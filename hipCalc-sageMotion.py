@@ -93,6 +93,43 @@ def quat2euler(q):
         yaw = yaw*180/np.pi
         
         return [roll, pitch, yaw]
+    
+    
+    
+    
+def quat2eulerXYZ(q):
+    # Input: Quaternion [qw, qx, qy, qz] 
+    # Output: XYZ Euler Angle (in degrees) [roll, pitch, yaw]
+    # modified from quat2euler 
+    
+    qw = q[0]
+    qx = q[1]
+    qy = q[2]
+    qz = q[3]
+
+    t0 = 2.0*(-qx*qy + qw*qz)
+    t1 = 1.0 - 2.0*(qy*qy + qz*qz)
+    roll = math.atan2(t0, t1)
+
+    t2 = 2.0*(qx*qz + qw*qy)
+    t2 = 1.0 if t2 > 1.0 else t2 # correct if it is out of range
+    t2 = -1.0 if t2 < -1.0 else t2 # correct if it is out of range
+    pitch = math.asin(t2)
+
+    t3 = 2.0*(-qy*qz + qw*qx)
+    t4 = 1.0 - 2.0*(qx*qx + qy*qy)
+    yaw = math.atan2(t3, t4)
+    
+    
+    # Convert to degrees
+    roll = roll*180/np.pi
+    pitch = pitch*180/np.pi
+    yaw = yaw*180/np.pi
+    
+    return [roll, pitch, yaw] 
+
+
+
 
 
 
@@ -128,40 +165,7 @@ def quat_multiply(a, b):
 
 
 def quat_conj(a):
-    return [a[0], -a[1], -a[2], -a[3]]
-
-
-
-def quat2eulerXYZ(q):
-    # Input: Quaternion [qw, qx, qy, qz] 
-    # Output: XYZ Euler Angle (in degrees) [roll, pitch, yaw]
-    # modified from quat2euler 
-    
-    qw = q[0]
-    qx = q[1]
-    qy = q[2]
-    qz = q[3]
-
-    t0 = 2.0*(-qx*qy + qw*qz)
-    t1 = 1.0 - 2.0*(qy*qy + qz*qz)
-    roll = math.atan2(t0, t1)
-
-    t2 = 2.0*(qx*qz + qw*qy)
-    t2 = 1.0 if t2 > 1.0 else t2 # correct if it is out of range
-    t2 = -1.0 if t2 < -1.0 else t2 # correct if it is out of range
-    pitch = math.asin(t2)
-
-    t3 = 2.0*(-qy*qz + qw*qx)
-    t4 = 1.0 - 2.0*(qx*qx + qy*qy)
-    yaw = math.atan2(t3, t4)
-    
-    
-    # Convert to degrees
-    roll = roll*180/np.pi
-    pitch = pitch*180/np.pi
-    yaw = yaw*180/np.pi
-    
-    return [roll, pitch, yaw]    
+    return [a[0], -a[1], -a[2], -a[3]]   
     
         
 
@@ -301,7 +305,7 @@ def main(participantName, frequency, hipThreshold):
              #turnaround point is unknown
             'p1402' : [150, -1, -1, 845, 'Right Lower Leg Angular Velocity (from radians)', pathToFolder + 'F014-002--Calculated_AV.xlsx'],
             'p2801' : [520, 2108, 2209, 3800, pathToFolder + 'Participant028-001.xlsx'],
-            'p2802' : [700, 2240, 2362, 4000, pathToFolder + 'Data/Participant028-002.xlsx'],
+            'p2802' : [700, 2240, 2362, 4000, pathToFolder + 'Participant028-002.xlsx'],
             'p303' : [400, 1500, 1588, 2638, pathToFolder + 'Participant003-003.xlsx'],
             'p3103' : [490, 3648, 3845, 7186, pathToFolder + 'Participant031-003.xlsx'], 
               }
@@ -437,8 +441,8 @@ def main(participantName, frequency, hipThreshold):
         '''
                    
         #self.my_sage.save_data(data, my_data)
-        addData(hipData, 'Calculated', [row, Hip_flex])
-        #addData(hipData, 'Actual', [row, actualHip])
+        addData(hipData, 'Calculated', [row, -Hip_abd])
+        addData(hipData, 'Actual', [row, actualHip])
         #self.my_sage.send_stream_data(data, my_data)
         
         ## end SageMotion code
@@ -459,10 +463,10 @@ def main(participantName, frequency, hipThreshold):
     #graph hip angles
     #graph(hipData, 0, 0,
     graph(hipData, trials[participantName][FORWARD_END_ROW], trials[participantName][BACKWARD_START_ROW], 
-                  participantName, 'Hip Calculations', 
+                  participantName, 'Hip Calculations (-1*hip_abd)', 
                   'Row', 'Hip Flexion/Extension', 
-                  ['Calculated'], 
-                  ['Row', 'Joint Angle'], ['g'])
+                  ['Calculated', 'Actual'], 
+                  ['Row', 'Joint Angle'], ['g', 'b'])
     
     
 
@@ -470,26 +474,26 @@ def main(participantName, frequency, hipThreshold):
 if __name__ == "__main__":
     
     hipThreshold = -10
-    
-    #main('SageMotion data', 100, hipThreshold)
+    '''
+    main('SageMotion data', 100, hipThreshold)
     
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, hipThreshold)
     
-    #print('\nPARTICIPANT 4-02\n')
-    #main('p402', 60, hipThreshold)
+    print('\nPARTICIPANT 4-02\n')
+    main('p402', 60, hipThreshold)
     
-    #print('\nPARTICIPANT 28-01\n')
-    #main('p2801', 100, hipThreshold)
+    print('\nPARTICIPANT 28-01\n')
+    main('p2801', 100, hipThreshold)
+    '''
+    print('\nPARTICIPANT 28-02\n')
+    main('p2802', 100, hipThreshold)
     
-    #print('\nPARTICIPANT 28-02\n')
-    #main('p2802', 100, hipThreshold)
+    print('\nPARTICIPANT 3-03\n')
+    main('p303', 60, hipThreshold)
     
-    #print('\nPARTICIPANT 3-03\n')
-    #main('p303', 60, hipThreshold)
-    
-    #print('\nPARTICIPANT 31-03\n')
-    #main('p3103', 100, hipThreshold)
+    print('\nPARTICIPANT 31-03\n')
+    main('p3103', 100, hipThreshold)
     
     
     '''
