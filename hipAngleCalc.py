@@ -62,6 +62,23 @@ def graph(data, forwardEnd, backwardStart, participantName, title, xLabel, yLabe
     plt.show()
         
     
+    
+'''
+Inputs:
+    - sheetName: excel sheet name
+    - startingColumn: column for q0, assuming that the rest of the quaternion columns appear sequentially after
+'''
+def getExcelQuaternions(filepath, sheetName, startingColumn):
+    
+    quat = []
+    
+    for i in range(0, 4):
+        quat.append( pandas.read_excel(filepath, sheet_name=sheetName, usecols=[startingColumn + i]) )
+
+    return quat[0], quat[1], quat[2], quat[3]  
+
+    
+    
 
 def main(participantName, frequency, hipThreshold):
     
@@ -88,34 +105,15 @@ def main(participantName, frequency, hipThreshold):
     
     print("start getting excel")
     
-    excel_quat_pelvis_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[1])
-    excel_quat_pelvis_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[2])
-    excel_quat_pelvis_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[3])
-    excel_quat_pelvis_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[4])
+    excel_quat_pelvis = getExcelQuaternions(trials[participantName][FILEPATH_INDEX], 'Segment Orientation - Quat', 1)
+
     
     print("got pelvis quat columns")
     
     # Right Upper Leg
-    excel_quat_upperLeg_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[61])
-    excel_quat_upperLeg_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[62])
-    excel_quat_upperLeg_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[63])
-    excel_quat_upperLeg_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[64])
+    excel_quat_upperLeg = getExcelQuaternions(trials[participantName][FILEPATH_INDEX], 'Segment Orientation - Quat', 61)
+
+
     # XSENS hip angle
     excel_hipZXY_flexion = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
                                              sheet_name='Joint Angles ZXY', 
@@ -127,22 +125,54 @@ def main(participantName, frequency, hipThreshold):
     row = trials[participantName][FORWARD_START_ROW]
     lastRow = trials[participantName][BACKWARD_END_ROW]
     
+    ''' SAGE MOTION DATA
+    
+    sageMotionData = '/Users/shana/Downloads/SageMotionSupport20210402/hip joint trial16.xlsx'
+    
+    print("start getting excel")
+    
+    sheetName = 'Sheet1'
+    
+    excel_quat_pelvis = getExcelQuaternions(sageMotionData, sheetName, 44)
+    
+    print("got pelvis quat columns")
+    
+    # Right Upper Leg
+    excel_quat_upperLeg = getExcelQuaternions(sageMotionData, sheetName, 28)
+    
+    
+    row = 0
+    lastRow = 2195
+    '''
+    
     hipData = { 'Calculated' : { 'Row' : [], 'Joint Angle' : [] },
                 'Actual' : { 'Row' : [], 'Joint Angle' : [] },
                }
     
     while(row < lastRow):
         
-        pelvis_q0 = excel_quat_pelvis_q0['Pelvis q0'].iloc[row]
-        pelvis_q1 = excel_quat_pelvis_q1['Pelvis q1'].iloc[row]
-        pelvis_q2 = excel_quat_pelvis_q2['Pelvis q2'].iloc[row]
-        pelvis_q3 = excel_quat_pelvis_q3['Pelvis q3'].iloc[row]
+        pelvis_q0 = excel_quat_pelvis[0]['Pelvis q0'].iloc[row]
+        pelvis_q1 = excel_quat_pelvis[1]['Pelvis q1'].iloc[row]
+        pelvis_q2 = excel_quat_pelvis[2]['Pelvis q2'].iloc[row]
+        pelvis_q3 = excel_quat_pelvis[3]['Pelvis q3'].iloc[row]
         
         
-        upperLeg_q0 = excel_quat_upperLeg_q0['Right Upper Leg q0'].iloc[row]
-        upperLeg_q1 = excel_quat_upperLeg_q1['Right Upper Leg q1'].iloc[row]
-        upperLeg_q2 = excel_quat_upperLeg_q2['Right Upper Leg q2'].iloc[row]
-        upperLeg_q3 = excel_quat_upperLeg_q3['Right Upper Leg q3'].iloc[row]
+        upperLeg_q0 = excel_quat_upperLeg[0]['Right Upper Leg q0'].iloc[row]
+        upperLeg_q1 = excel_quat_upperLeg[1]['Right Upper Leg q1'].iloc[row]
+        upperLeg_q2 = excel_quat_upperLeg[2]['Right Upper Leg q2'].iloc[row]
+        upperLeg_q3 = excel_quat_upperLeg[3]['Right Upper Leg q3'].iloc[row]
+        
+        ''' SAGE MOTION DATA
+        pelvis_q0 = excel_quat_pelvis[0]['Quat1_3'].iloc[row] 
+        pelvis_q1 = excel_quat_pelvis[1]['Quat2_3'].iloc[row]
+        pelvis_q2 = excel_quat_pelvis[2]['Quat3_3'].iloc[row]
+        pelvis_q3 = excel_quat_pelvis[3]['Quat4_3'].iloc[row]
+        
+        upperLeg_q0 = excel_quat_upperLeg[0]['Quat1_2'].iloc[row]
+        upperLeg_q1 = excel_quat_upperLeg[1]['Quat2_2'].iloc[row]
+        upperLeg_q2 = excel_quat_upperLeg[2]['Quat3_2'].iloc[row]
+        upperLeg_q3 = excel_quat_upperLeg[3]['Quat4_2'].iloc[row]
+        '''
         
         actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
         
@@ -163,10 +193,10 @@ def main(participantName, frequency, hipThreshold):
         
    # graph hip angles
     graph(hipData, trials[participantName][FORWARD_END_ROW], trials[participantName][BACKWARD_START_ROW], 
-                  participantName, 'Hip Calculations (g) & Actual Hip Angle (b)', 
+                  participantName, 'w/ Old Code', 
                   'Row', 'Hip ZXY Flexion/Extension', 
-                  ['Calculated','Actual'], 
-                  ['Row', 'Joint Angle'], ['g','b'])
+                  ['Calculated'], 
+                  ['Row', 'Joint Angle'], ['g'])
     
     
 
@@ -177,7 +207,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, hipThreshold)
-    
+    '''
     print('\nPARTICIPANT 4-02\n')
     main('p402', 60, hipThreshold)
     
@@ -192,7 +222,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 31-03\n')
     main('p3103', 100, hipThreshold)
-    
+    '''
     
     '''
     ^ CHECK (1) PARTICIPANT NAME, 

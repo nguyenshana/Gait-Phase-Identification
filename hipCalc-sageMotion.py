@@ -163,39 +163,6 @@ def quat2eulerXYZ(q):
     
     return [roll, pitch, yaw]    
     
-
-
-def test_print_sensor_quaternions(self, data):
-    # Test print
-    if self.iteration % 100 == 0:
-        qw = data[self.NodeNum_pelvis]['Quat1']
-        qx = data[self.NodeNum_pelvis]['Quat2']
-        qy = data[self.NodeNum_pelvis]['Quat3']
-        qz = data[self.NodeNum_pelvis]['Quat4']
-        this_Euler = quat2euler([qw,qx,qy,qz])
-        print("sensor pelvis [roll(X) pitch(Y) yaw(Z)]")
-        print(np.around(this_Euler,decimals=3))
-        print("")
-        
-    if self.iteration % 100 == 0:
-        qw = data[self.NodeNum_thigh]['Quat1']
-        qx = data[self.NodeNum_thigh]['Quat2']
-        qy = data[self.NodeNum_thigh]['Quat3']
-        qz = data[self.NodeNum_thigh]['Quat4']
-        this_Euler = quat2euler([qw,qx,qy,qz])
-        print("sensor thigh [roll(X) pitch(Y) yaw(Z)]")
-        print(np.around(this_Euler,decimals=3))
-        print("")
-
-    if self.iteration % 100 == 0:
-        qw = data[self.NodeNum_foot]['Quat1']
-        qx = data[self.NodeNum_foot]['Quat2']
-        qy = data[self.NodeNum_foot]['Quat3']
-        qz = data[self.NodeNum_foot]['Quat4']
-        this_Euler = quat2euler([qw,qx,qy,qz])
-        print("sensor foot [roll(X) pitch(Y) yaw(Z)]")
-        print(np.around(this_Euler,decimals=3))
-        print("")
         
 
 
@@ -223,37 +190,31 @@ def calibrate(data):
     GS_pelvis_q0 = GS_pelvis_q_init
     GS_thigh_q0 = GS_thigh_q_init
     
-    
     pelvis_Euler = quat2euler(GS_pelvis_q0)
     CommonYaw = pelvis_Euler[2]
     
-    GB_Euler0_target = [0,0,CommonYaw]  # this is our alignment target, we expect rotate IMU to this orientation, both pelvis and thigh have the same target.
+    GB_Euler0_target = [0,0,CommonYaw]  
+    # ^ this is our alignment target, we expect rotate IMU to this orientation, 
+    # both pelvis and thigh have the same target.
     GB_q0_target = euler2quat(GB_Euler0_target)  # target in quaternion format.    
     
     GS_q0 = GS_pelvis_q0  # current IMU orientation, in global coordinate.
-    BS_q_pelvis_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)  # conjugate quaternion of thigh sensor to segment quaternion. inv represent for inversion, the same as conjugate. 
+    BS_q_pelvis_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)  
+    # ^ conjugate quaternion of thigh sensor to segment quaternion...
+    # inv represent for inversion, the same as conjugate. 
     # refer to Hip angle tutorial SageMotion.pptx step2.
     
     GS_q0 = GS_thigh_q0  
     BS_q_thigh_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)
     
-    print("Calibrate finished")
+    return BS_q_pelvis_inv, BS_q_thigh_inv
 
 
 
-def calculate_HipExtAngle(data, initialQuat):
+
+
+def calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv):
     
-    GS_pelvis_q0 = [
-                    initialQuat['pelvis_q0'],
-                    initialQuat['pelvis_q1'],
-                    initialQuat['pelvis_q2'],
-                    initialQuat['pelvis_q3'] ]
-    GS_thigh_q0 = [
-                    initialQuat['upperLeg_q0'],
-                    initialQuat['upperLeg_q1'],
-                    initialQuat['upperLeg_q2'],
-                    initialQuat['upperLeg_q3'] ]
-
 #     print("calculate_HipExtAngle")
     GS_pelvis_q = [
                     data['pelvis_q0'],
@@ -270,26 +231,6 @@ def calculate_HipExtAngle(data, initialQuat):
                     # data[self.NodeNum_foot]['Quat2'],
                     # data[self.NodeNum_foot]['Quat3'],
                     # data[self.NodeNum_foot]['Quat4']]
-    
-    ## From calibration ##
-    
-    pelvis_Euler = quat2euler(GS_pelvis_q0)
-    CommonYaw = pelvis_Euler[2]
-    
-    GB_Euler0_target = [0,0,CommonYaw]  
-    # ^ this is our alignment target, we expect rotate IMU to this orientation, 
-    # both pelvis and thigh have the same target.
-    GB_q0_target = euler2quat(GB_Euler0_target)  # target in quaternion format.    
-    
-    GS_q0 = GS_pelvis_q0  # current IMU orientation, in global coordinate.
-    BS_q_pelvis_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)  # conjugate quaternion of thigh sensor to segment quaternion. inv represent for inversion, the same as conjugate. 
-    # refer to Hip angle tutorial SageMotion.pptx step2.
-    
-    GS_q0 = GS_thigh_q0  
-    BS_q_thigh_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)
-    
-    ## End calibration ##
-    
     
     GS_q = GS_pelvis_q
     BS_q = BS_q_pelvis_inv
@@ -322,17 +263,30 @@ def calculate_HipExtAngle(data, initialQuat):
     return (Hip_flex,Hip_abd,Hip_rot)
 
 
-
-
+'''
+Inputs:
+    - sheetName: excel sheet name
+    - startingColumn: column for q0, assuming that the rest of the quaternion columns appear sequentially after
+'''
+def getExcelQuaternions(filepath, sheetName, startingColumn):
     
+    quat = []
+    
+    for i in range(0, 4):
+        quat.append( pandas.read_excel(filepath, sheet_name=sheetName, usecols=[startingColumn + i]) )
+
+    return quat[0], quat[1], quat[2], quat[3]    
+
+
+
+
+
+
 
 def main(participantName, frequency, hipThreshold):
     
     # Participant information below
     pathToFolder = '/Users/shana/Desktop/DesktopItems/BIOFEEDBACK/data/'
-    
-    
-    ''' OLD CODE
     
     FORWARD_START_ROW = 0
     FORWARD_END_ROW = 1
@@ -352,37 +306,18 @@ def main(participantName, frequency, hipThreshold):
             'p3103' : [490, 3648, 3845, 7186, pathToFolder + 'Participant031-003.xlsx'], 
               }
     
-    
+ 
     print("start getting excel")
     
-    excel_quat_pelvis_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[1])
-    excel_quat_pelvis_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[2])
-    excel_quat_pelvis_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[3])
-    excel_quat_pelvis_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[4])
+    excel_quat_pelvis = getExcelQuaternions(trials[participantName][FILEPATH_INDEX], 'Segment Orientation - Quat', 1)
+
     
     print("got pelvis quat columns")
     
     # Right Upper Leg
-    excel_quat_upperLeg_q0 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[61])
-    excel_quat_upperLeg_q1 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[62])
-    excel_quat_upperLeg_q2 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[63])
-    excel_quat_upperLeg_q3 = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
-                                        sheet_name='Segment Orientation - Quat', 
-                                        usecols=[64])
+    excel_quat_upperLeg = getExcelQuaternions(trials[participantName][FILEPATH_INDEX], 'Segment Orientation - Quat', 61)
+
+
     # XSENS hip angle
     excel_hipZXY_flexion = pandas.read_excel(trials[participantName][FILEPATH_INDEX], 
                                              sheet_name='Joint Angles ZXY', 
@@ -393,8 +328,11 @@ def main(participantName, frequency, hipThreshold):
     
     row = trials[participantName][FORWARD_START_ROW]
     lastRow = trials[participantName][BACKWARD_END_ROW]
-    '''
+
     
+
+    
+    ''' # SAGEMOTION STUFF
     
     sageMotionData = '/Users/shana/Downloads/SageMotionSupport20210402/hip joint trial16.xlsx'
     
@@ -402,88 +340,67 @@ def main(participantName, frequency, hipThreshold):
     
     sheetName = 'Sheet1'
     
-    excel_quat_pelvis_q0 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[44])
-    excel_quat_pelvis_q1 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[45])
-    excel_quat_pelvis_q2 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[46])
-    excel_quat_pelvis_q3 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[47])
+    excel_quat_pelvis = getExcelQuaternions(sageMotionData, sheetName, 44)
     
     print("got pelvis quat columns")
     
     # Right Upper Leg
-    excel_quat_upperLeg_q0 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[28])
-    excel_quat_upperLeg_q1 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[29])
-    excel_quat_upperLeg_q2 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[30])
-    excel_quat_upperLeg_q3 = pandas.read_excel(sageMotionData, 
-                                        sheet_name=sheetName, 
-                                        usecols=[31])
+    excel_quat_upperLeg = getExcelQuaternions(sageMotionData, sheetName, 28)
     
     
     row = 0
     lastRow = 2195
+    '''
+    
+    
     
     hipData = { 'Calculated' : { 'Row' : [], 'Joint Angle' : [] },
                 'Actual' : { 'Row' : [], 'Joint Angle' : [] },
                }
     
-    initialQuat = { 
-                'pelvis_q0' : excel_quat_pelvis_q0['Quat1_3'].iloc[row], 
-                'pelvis_q1' : excel_quat_pelvis_q1['Quat2_3'].iloc[row],
-                'pelvis_q2' : excel_quat_pelvis_q2['Quat3_3'].iloc[row],
-                'pelvis_q3' : excel_quat_pelvis_q3['Quat4_3'].iloc[row],
-                
-                'upperLeg_q0' : excel_quat_upperLeg_q0['Quat1_2'].iloc[row],
-                'upperLeg_q1' : excel_quat_upperLeg_q1['Quat2_2'].iloc[row],
-                'upperLeg_q2' : excel_quat_upperLeg_q2['Quat3_2'].iloc[row],
-                'upperLeg_q3' : excel_quat_upperLeg_q3['Quat4_2'].iloc[row]
-                }
+    initialIteration = True
+    
+    BS_q_pelvis_inv = []
+    BS_q_thigh_inv = []
     
     while(row < lastRow):
         
-        ''' OLD CODE
-        
-        pelvis_q0 = excel_quat_pelvis_q0['Pelvis q0'].iloc[row]
-        pelvis_q1 = excel_quat_pelvis_q1['Pelvis q1'].iloc[row]
-        pelvis_q2 = excel_quat_pelvis_q2['Pelvis q2'].iloc[row]
-        pelvis_q3 = excel_quat_pelvis_q3['Pelvis q3'].iloc[row]
-        
-        
-        upperLeg_q0 = excel_quat_upperLeg_q0['Right Upper Leg q0'].iloc[row]
-        upperLeg_q1 = excel_quat_upperLeg_q1['Right Upper Leg q1'].iloc[row]
-        upperLeg_q2 = excel_quat_upperLeg_q2['Right Upper Leg q2'].iloc[row]
-        upperLeg_q3 = excel_quat_upperLeg_q3['Right Upper Leg q3'].iloc[row]
-        
+        data = {
+                'pelvis_q0': excel_quat_pelvis[0]['Pelvis q0'].iloc[row],
+                'pelvis_q1': excel_quat_pelvis[1]['Pelvis q1'].iloc[row],
+                'pelvis_q2': excel_quat_pelvis[2]['Pelvis q2'].iloc[row],
+                'pelvis_q3': excel_quat_pelvis[3]['Pelvis q3'].iloc[row],
+                
+                'upperLeg_q0': excel_quat_upperLeg[0]['Right Upper Leg q0'].iloc[row],
+                'upperLeg_q1': excel_quat_upperLeg[1]['Right Upper Leg q1'].iloc[row],
+                'upperLeg_q2': excel_quat_upperLeg[2]['Right Upper Leg q2'].iloc[row],
+                'upperLeg_q3': excel_quat_upperLeg[3]['Right Upper Leg q3'].iloc[row],
+                }
+
         actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
+
         
-        q_pelvis = pyq.Quaternion(pelvis_q0,pelvis_q1,pelvis_q2,pelvis_q3)
-        q_upperLeg = pyq.Quaternion(upperLeg_q0,upperLeg_q1,upperLeg_q2,upperLeg_q3)
-        '''
+        
+        ''' #SAGEMOTION DATA FORMAT
         
         data = { 
-                'pelvis_q0' : excel_quat_pelvis_q0['Quat1_3'].iloc[row], 
-                'pelvis_q1' : excel_quat_pelvis_q1['Quat2_3'].iloc[row],
-                'pelvis_q2' : excel_quat_pelvis_q2['Quat3_3'].iloc[row],
-                'pelvis_q3' : excel_quat_pelvis_q3['Quat4_3'].iloc[row],
+                'pelvis_q0' : excel_quat_pelvis[0]['Quat1_3'].iloc[row], 
+                'pelvis_q1' : excel_quat_pelvis[1]['Quat2_3'].iloc[row],
+                'pelvis_q2' : excel_quat_pelvis[2]['Quat3_3'].iloc[row],
+                'pelvis_q3' : excel_quat_pelvis[3]['Quat4_3'].iloc[row],
                 
-                'upperLeg_q0' : excel_quat_upperLeg_q0['Quat1_2'].iloc[row],
-                'upperLeg_q1' : excel_quat_upperLeg_q1['Quat2_2'].iloc[row],
-                'upperLeg_q2' : excel_quat_upperLeg_q2['Quat3_2'].iloc[row],
-                'upperLeg_q3' : excel_quat_upperLeg_q3['Quat4_2'].iloc[row]
+                'upperLeg_q0' : excel_quat_upperLeg[0]['Quat1_2'].iloc[row],
+                'upperLeg_q1' : excel_quat_upperLeg[1]['Quat2_2'].iloc[row],
+                'upperLeg_q2' : excel_quat_upperLeg[2]['Quat3_2'].iloc[row],
+                'upperLeg_q3' : excel_quat_upperLeg[3]['Quat4_2'].iloc[row]
                 }
+        '''
         
+                
+        #q_pelvis = pyq.Quaternion(data['pelvis_q0'],data['pelvis_q1'],data['pelvis_q2'],data['pelvis_q3'])
+        #q_upperLeg = pyq.Quaternion(data['upperLeg_q0'],data['upperLeg_q1'],data['upperLeg_q2'],data['upperLeg_q3'])
+        
+ 
         
         #self.iteration += 1
         
@@ -492,14 +409,15 @@ def main(participantName, frequency, hipThreshold):
         
         # Calibrate to find BS_q, sensor to body segment alignment quaternions on 1st iteration
         #if self.iteration == 1:
-        if row == 0:
-            calibrate(data) 
+        if initialIteration:
+            BS_q_pelvis_inv, BS_q_thigh_inv = calibrate(data) 
+            initialIteration = False
 
         # Find the gait phase
         #HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
 
         # Calculate hip extension angle
-        (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, initialQuat) #     
+        (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv) #     
         
         # Give haptic feedback (turn feedback nodes on/off)
         # if self.config['isFeedbackOn'] == "Yes" and self.alreadyGivenFeedback == 0:
@@ -519,8 +437,8 @@ def main(participantName, frequency, hipThreshold):
         '''
                    
         #self.my_sage.save_data(data, my_data)
-        print(Hip_flex)
-        addData(hipData, 'Calculated', [row/frequency, Hip_flex])
+        addData(hipData, 'Calculated', [row, Hip_flex])
+        #addData(hipData, 'Actual', [row, actualHip])
         #self.my_sage.send_stream_data(data, my_data)
         
         ## end SageMotion code
@@ -538,8 +456,9 @@ def main(participantName, frequency, hipThreshold):
         row += 1
         
         
-   # graph hip angles
-    graph(hipData, 0, 0, 
+    #graph hip angles
+    #graph(hipData, 0, 0,
+    graph(hipData, trials[participantName][FORWARD_END_ROW], trials[participantName][BACKWARD_START_ROW], 
                   participantName, 'Hip Calculations', 
                   'Row', 'Hip Flexion/Extension', 
                   ['Calculated'], 
@@ -552,10 +471,10 @@ if __name__ == "__main__":
     
     hipThreshold = -10
     
-    main('SageMotion data', 100, hipThreshold)
+    #main('SageMotion data', 100, hipThreshold)
     
-    #print('\nPARTICIPANT 4-01\n')
-    #main('p401', 60, hipThreshold)
+    print('\nPARTICIPANT 4-01\n')
+    main('p401', 60, hipThreshold)
     
     #print('\nPARTICIPANT 4-02\n')
     #main('p402', 60, hipThreshold)
