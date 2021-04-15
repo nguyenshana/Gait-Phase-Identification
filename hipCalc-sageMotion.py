@@ -360,12 +360,23 @@ def main(participantName, frequency, hipThreshold):
     
     hipData = { 'Calculated' : { 'Row' : [], 'Joint Angle' : [] },
                 'Actual' : { 'Row' : [], 'Joint Angle' : [] },
+                'Crossed Threshold' : { 'Row' : [], 'Joint Angle' : [] },
                }
     
     initialIteration = True
+    secondIteration = False
     
     BS_q_pelvis_inv = []
     BS_q_thigh_inv = []
+    
+    previousHipAngle = -1000.0
+    previousHipAngleDifference = -1000.0
+    
+    hipAngleMinimas = []
+    
+    doBiofeedback = False
+    biofeedbackOn = False
+    hipThreshold = -1000.0
     
     while(row < lastRow):
         
@@ -400,11 +411,10 @@ def main(participantName, frequency, hipThreshold):
                 }
         '''
         
-                
-        #q_pelvis = pyq.Quaternion(data['pelvis_q0'],data['pelvis_q1'],data['pelvis_q2'],data['pelvis_q3'])
-        #q_upperLeg = pyq.Quaternion(data['upperLeg_q0'],data['upperLeg_q1'],data['upperLeg_q2'],data['upperLeg_q3'])
         
- 
+        
+        ## START SAGEMOTION CODE
+        
         
         #self.iteration += 1
         
@@ -415,7 +425,7 @@ def main(participantName, frequency, hipThreshold):
         #if self.iteration == 1:
         if initialIteration:
             BS_q_pelvis_inv, BS_q_thigh_inv = calibrate(data) 
-            initialIteration = False
+            # initialIteration = False ## added to Section 1 instead
 
         # Find the gait phase
         #HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
@@ -439,25 +449,99 @@ def main(participantName, frequency, hipThreshold):
                    'Hip_abd': [Hip_abd],
                    'Hip_rot': [Hip_rot]}
         '''
+        
+        hipAngle = -Hip_abd
                    
         #self.my_sage.save_data(data, my_data)
-        addData(hipData, 'Calculated', [row, -Hip_abd])
+        addData(hipData, 'Calculated', [row, hipAngle])
         addData(hipData, 'Actual', [row, actualHip])
         #self.my_sage.send_stream_data(data, my_data)
         
-        ## end SageMotion code
+        
+        ## END SAGEMOTION CODE
         
         
-        # Get the difference between these two orientations
-       ## q_hipAngle = q_pelvis.conjugate * q_upperLeg
+        # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
         
-        # Euler Angle
-       #theta = math.asin ( 2 * (q_hipAngle.w * q_hipAngle.y - q_hipAngle.z * q_hipAngle.x) )
+   
+        ## SECTION #1: Calibration (collect hip angle data)
+            
+        if initialIteration:
+            previousHipAngle = hipAngle
+            initialIteration = False
+            secondIteration = True
+            continue
+            
+        elif secondIteration:
+            previousHipAngleDifference = hipAngle - previousHipAngle
+            previousHipAngle = hipAngle
+            secondIteration = False
+            continue
         
-       # addData(hipData, 'Calculated', [row, -theta*180.0/math.pi])
-       # addData(hipData, 'Actual', [row, actualHip])
+        
+        # If it reaches here, then it's not the first two rows
+        hipAngleDifference = hipAngle - previousHipAngle
+        
+        # Hip Angle minima 
+        if previousHipAngleDifference < 0 and hipAngleDifference > 0 and previousHipAngle < 0 :
+            hipAngleMinimas.append(previousHipAngle)
+        
+        
+        
+        # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+        
+        
+        ## SECTION #2: Biofeedback
+        
+        if row > ( 
+                    ( lastRow - trials[participantName][FORWARD_START_ROW] )/6 + trials[participantName][FORWARD_START_ROW] 
+                 ):
+            doBiofeedback = True
+        
+        
+        if doBiofeedback:
+            
+            if hipThreshold == -1000:
+                
+                print("\nHip angle minima values: ",hipAngleMinimas)
+                
+                hipAngleMinimas_average = sum(hipAngleMinimas)/len(hipAngleMinimas)
+                
+                print('Hip Angle extention (minima) average was ', hipAngleMinimas_average)
+                
+                hipAngle_biofeedbackPercentage = float ( input("What pecentage increase would you like?\n(ex. 20)\n") )/100
+                
+                hipThreshold = hipAngleMinimas_average * (1 + hipAngle_biofeedbackPercentage)
+                print("Hip threshold is ", hipThreshold, "\n")
+            
+            
+            if hipAngle < hipThreshold and biofeedbackOn == False :
+                biofeedbackOn = True
+                print("BIOFEEDBACK ", biofeedbackOn, " - ", row)
+                addData(hipData, 'Crossed Threshold', [row, hipAngle])
+                
+            # Just for graphing/collecting data
+            elif hipAngle < hipThreshold and biofeedbackOn == True :
+                addData(hipData, 'Crossed Threshold', [row, hipAngle])
+                
+            elif hipAngle > hipThreshold and biofeedbackOn == True :
+                biofeedbackOn = False
+                print("BIOFEEDBACK ", biofeedbackOn, " - ", row)
+                
+                
+               
+        # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+        
+        
+        ## SETUP for next loop
+                
+        previousHipAngleDifference = hipAngleDifference
+        previousHipAngle = hipAngle
         
         row += 1
+            
+        
+        
         
         
     #graph hip angles
@@ -465,8 +549,8 @@ def main(participantName, frequency, hipThreshold):
     graph(hipData, trials[participantName][FORWARD_END_ROW], trials[participantName][BACKWARD_START_ROW], 
                   participantName, 'Hip Calculations (-1*hip_abd)', 
                   'Row', 'Hip Flexion/Extension', 
-                  ['Calculated', 'Actual'], 
-                  ['Row', 'Joint Angle'], ['g', 'b'])
+                  ['Calculated', 'Actual','Crossed Threshold'], 
+                  ['Row', 'Joint Angle'], ['g','b','r'])
     
     
 
@@ -476,16 +560,16 @@ if __name__ == "__main__":
     hipThreshold = -10
     '''
     main('SageMotion data', 100, hipThreshold)
-    
+    '''
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, hipThreshold)
-    
+    '''
     print('\nPARTICIPANT 4-02\n')
     main('p402', 60, hipThreshold)
     
     print('\nPARTICIPANT 28-01\n')
     main('p2801', 100, hipThreshold)
-    '''
+    
     print('\nPARTICIPANT 28-02\n')
     main('p2802', 100, hipThreshold)
     
@@ -494,7 +578,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 31-03\n')
     main('p3103', 100, hipThreshold)
-    
+    '''
     
     '''
     ^ CHECK (1) PARTICIPANT NAME, 

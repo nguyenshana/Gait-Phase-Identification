@@ -176,11 +176,19 @@ def main(participantName, frequency, hipThreshold):
         
         actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
         
+        # Hip angle calculation from https://stackoverflow.com/questions/57063595/how-to-obtain-the-angle-between-two-quaternions
         q_pelvis = pyq.Quaternion(pelvis_q0,pelvis_q1,pelvis_q2,pelvis_q3)
         q_upperLeg = pyq.Quaternion(upperLeg_q0,upperLeg_q1,upperLeg_q2,upperLeg_q3)
         
         # Get the difference between these two orientations
         q_hipAngle = q_pelvis.conjugate * q_upperLeg
+        
+        '''
+        phi   = math.atan2( 2 * (qd.w * qd.x + qd.y * qd.z), 1 - 2 * (qd.x**2 + qd.y**2) )
+        theta = math.asin ( 2 * (qd.w * qd.y - qd.z * qd.x) )
+        psi   = math.atan2( 2 * (qd.w * qd.z + qd.x * qd.y), 1 - 2 * (qd.y**2 + qd.z**2) )
+
+        '''
         
         # Euler Angle
         theta = math.asin ( 2 * (q_hipAngle.w * q_hipAngle.y - q_hipAngle.z * q_hipAngle.x) )
