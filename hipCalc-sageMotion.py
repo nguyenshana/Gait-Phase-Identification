@@ -306,7 +306,7 @@ Inputs:
         4. SageMotion graphs calculations + the empty crossed-threshold values (refer to #3) while XSENS graphs calculated, actual, and crossed-threshold values
 
 TO DO:
-    - add HS wait for bioifeedback
+    - add SageMotion biofeedback
     - change data structure for HS
 '''
 def main(participantName, frequency, isSageMotionData):
