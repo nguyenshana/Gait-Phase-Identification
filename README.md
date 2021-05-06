@@ -3,14 +3,15 @@
 Algorithm to detect gait phase.
 Can be altered to detect in real time. 
 
-## Main code is in: shankAccelZ.py
+## Main code is in: hipCalc-sageMotion.py
 
-### For shankAccelZ.py, footAVyshankAVz.py, multipleSignals.py:
+## For hipCalc-sageMotion.py:
+As well as shankAccelZ.py, footAVyshankAVz.py, multipleSignals.py
 
 1. Can change the inputs for main() at the very bottom
 2. Change 'pathToFolder' variable in main() to have the correct path to your excel files
 
-### For gyroscopeAlgorithm.py:
+ For gyroscopeAlgorithm.py:
 
 Remember to change (or at least check):
 1. Change pathToFolder to your path to the excel files (line 31)
