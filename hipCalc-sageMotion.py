@@ -609,7 +609,7 @@ def main(participantName, frequency, isSageMotionData):
                 
                 '''
                 
-                hipAngle_biofeedbackPercentage = 0 #float ( input("What pecentage increase would you like? (ex. 20)\n") )/100
+                hipAngle_biofeedbackPercentage = float ( input("What pecentage increase would you like? (ex. 20)\n") )/100
                 
                 hipThreshold = hipAngleMinimas_average * (1 + hipAngle_biofeedbackPercentage)
                 print("Hip threshold is ", hipThreshold, "\n")
