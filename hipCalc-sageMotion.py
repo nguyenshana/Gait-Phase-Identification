@@ -131,6 +131,40 @@ def quat2eulerXYZ(q):
     
     return [roll, pitch, yaw] 
 
+
+'''
+from XSENS AWINDA manual
+
+'''
+def XSENSquat2euler(q):
+    
+    pelvis = [ q['pelvis_q0'], q['pelvis_q1'], q['pelvis_q2'], q['pelvis_q3']]
+    
+    thigh = [ q['upperLeg_q0'], q['upperLeg_q1'], q['upperLeg_q2'], q['upperLeg_q3']]
+    
+    q = quat_multiply(quat_conj(pelvis), thigh)
+    
+    t0 = 2*q[2]*q[3] + 2*q[0]*q[1]
+    t1 = 2*q[0]*q[0] + 2*q[3]*q[3] - 1
+    roll = math.atan2(t0, t1)
+    
+    
+    t2 = 2*q[1]*q[3] - 2*q[0]*q[2]
+    pitch = -math.asin(t2)
+    
+    
+    t3 = 2*q[1]*q[2] + 2*q[0]*q[3]
+    t4 = 2*q[0]*q[0] + 2*q[1]*q[1] - 1 
+    yaw = math.atan2(t3, t4)
+    
+    
+    # Convert to degrees
+    roll = roll*180/np.pi
+    pitch = pitch*180/np.pi
+    yaw = yaw*180/np.pi
+    
+    return [roll, pitch, yaw]
+
     
 
 
@@ -295,6 +329,10 @@ def convertMilliSecToRow(frequency, milliseconds):
 
 
 
+
+
+
+
 '''
 Inputs:
     - participantName [type: string]: if XSENS data, then used to get row information; otherwise, this is just used for graph titling
@@ -454,6 +492,11 @@ def main(participantName, frequency, isSageMotionData):
                     }
     
             actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
+            
+            roll, pitch, yaw = XSENSquat2euler(data) 
+            hipAngle = -pitch # -Hip_abd
+            
+            addData(hipData, 'Actual', [row, actualHip])
 
             # END SECTION --> XSENS DATA FORMAT
         
@@ -476,56 +519,51 @@ def main(participantName, frequency, isSageMotionData):
                     'shankAccelZ' : excel_shank_AccelZ['AccelZ_1'].iloc[row] 
                     }
             
+            # Lines that start with "###" are parts from SageMotion's code
+        
+            ### self.iteration += 1
+            
+            ###  Test print sensor quaternions
+            ### HipExt_funcs.test_print_sensor_quaternions(self,data)
+            
+            ###  Calibrate to find BS_q, sensor to body segment alignment quaternions on 1st iteration
+            ### if self.iteration == 1:
+            if initialIteration:
+                BS_q_pelvis_inv, BS_q_thigh_inv = calibrate(data) 
+                # initialIteration = False # added to Section 1 instead
+    
+            ### Find the gait phase
+            ### HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
+    
+            # Calculate hip extension angle
+            (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv) #     
+            
+            ### Give haptic feedback (turn feedback nodes on/off)
+            ### if self.config['isFeedbackOn'] == "Yes" and self.alreadyGivenFeedback == 0:
+                ### HipExt_funcs.give_feedback(self) 
+    
+            ### time_now = self.iteration / self.DATARATE # time in seconds
+    
+            ### my_data = {'time': [time_now],
+                       ### 'Gait_Phase': [self.gaitphase]}
+    
+            '''
+            my_data = {'time': [time_now],
+                       'Gait_Phase': [self.gaitphase],
+                       'Hip_flex': [Hip_flex],
+                       'Hip_abd': [Hip_abd],
+                       'Hip_rot': [Hip_rot]}
+            '''
+            
+            hipAngle = Hip_flex
+            
             # END SECTION --> SAGEMOTION DATA FORMAT
             
         
-        # Lines that start with "###" are parts from SageMotion's code
         
-        ### self.iteration += 1
-        
-        ###  Test print sensor quaternions
-        ### HipExt_funcs.test_print_sensor_quaternions(self,data)
-        
-        ###  Calibrate to find BS_q, sensor to body segment alignment quaternions on 1st iteration
-        ### if self.iteration == 1:
-        if initialIteration:
-            BS_q_pelvis_inv, BS_q_thigh_inv = calibrate(data) 
-            # initialIteration = False # added to Section 1 instead
-
-        ### Find the gait phase
-        ### HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
-
-        # Calculate hip extension angle
-        (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv) #     
-        
-        ### Give haptic feedback (turn feedback nodes on/off)
-        ### if self.config['isFeedbackOn'] == "Yes" and self.alreadyGivenFeedback == 0:
-            ### HipExt_funcs.give_feedback(self) 
-
-        ### time_now = self.iteration / self.DATARATE # time in seconds
-
-        ### my_data = {'time': [time_now],
-                   ### 'Gait_Phase': [self.gaitphase]}
-
-        '''
-        my_data = {'time': [time_now],
-                   'Gait_Phase': [self.gaitphase],
-                   'Hip_flex': [Hip_flex],
-                   'Hip_abd': [Hip_abd],
-                   'Hip_rot': [Hip_rot]}
-        '''
-        
-        hipAngle = Hip_flex
-        
-        if not isSageMotionData:
-            hipAngle = -Hip_abd
-                   
         ### self.my_sage.save_data(data, my_data)
         ### self.my_sage.send_stream_data(data, my_data)
         addData(hipData, 'Calculated', [row, hipAngle])
-        
-        if not isSageMotionData:
-            addData(hipData, 'Actual', [row, actualHip])
 
         
         
@@ -678,6 +716,9 @@ def main(participantName, frequency, isSageMotionData):
                 
                         actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
                         addData(hipData, 'Actual', [row, actualHip])
+                        
+                        roll, pitch, yaw = XSENSquat2euler(data) 
+                        hipAngle = -pitch # -Hip_abd
             
                         # END SECTION --> XSENS DATA FORMAT
                         
@@ -699,17 +740,14 @@ def main(participantName, frequency, isSageMotionData):
                                 'shankAccelZ' : excel_shank_AccelZ['AccelZ_1'].iloc[row] 
                                 }
                         
+                        (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv)
+
+                        hipAngle = Hip_flex
+                        
                         # END SECTION --> SAGEMOTION DATA FORMAT
                     
-                    (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv)
                     
-                    if not isSageMotionData:
-                        hipAngle = -Hip_abd
-                        shankAccelZ = data['shankAccelZ']
-                        
-                    elif isSageMotionData:
-                        hipAngle = Hip_flex
-                        shankAccelZ = data['shankAccelZ']
+                    shankAccelZ = data['shankAccelZ']
                     
                     hipAngleDifference = hipAngle - previousHipAngle
                     shankAccelZDifference = shankAccelZ - previousShankAccelZ
@@ -735,6 +773,7 @@ def main(participantName, frequency, isSageMotionData):
                             # Wait 300 ms before searching for next HS
                             # End one row beforehand so then it can go back to the main loop and increment by 1 row
                             while row - HSStartRow < waitRow300 - 1 and row < lastRow:
+                                
                                 row += 1
                                 
                                 if not isSageMotionData:
@@ -758,6 +797,9 @@ def main(participantName, frequency, isSageMotionData):
                                     actualHip = excel_hipZXY_flexion['Right Hip Flexion/Extension'].iloc[row]
                                     addData(hipData, 'Actual', [row, actualHip])
                                     
+                                    roll, pitch, yaw = XSENSquat2euler(data) 
+                                    hipAngle = -pitch # -Hip_abd
+                                    
                                     # END SECTION --> XSENS DATA FORMAT
                         
                                 elif isSageMotionData:
@@ -778,17 +820,13 @@ def main(participantName, frequency, isSageMotionData):
                                             'shankAccelZ' : excel_shank_AccelZ['AccelZ_1'].iloc[row] 
                                             }
                                     
+                                    (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv)
+                                    
+                                    hipAngle = Hip_flex
+                                    
                                     # END SECTION --> SAGEMOTION DATA FORMAT
                                 
-                                (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv)
-                                
-                                if not isSageMotionData:
-                                    hipAngle = -Hip_abd
-                                    shankAccelZ = data['shankAccelZ']
-                                    
-                                elif isSageMotionData:
-                                    hipAngle = Hip_flex
-                                    shankAccelZ = data['shankAccelZ']
+                                shankAccelZ = data['shankAccelZ']
                                 
                                 hipAngleDifference = hipAngle - previousHipAngle
                                 shankAccelZDifference = shankAccelZ - previousShankAccelZ
@@ -852,7 +890,7 @@ def main(participantName, frequency, isSageMotionData):
         
     
     graph(hipData, startRow, endRow,
-            participantName, 'Hip Calculations (xsens -hip_abd; sage hip_ext)', #[XSENS--hip_abd; Sage-hip_ext]
+            participantName, 'Hip Calculations (xsens -pitch; sage hip_ext)', #[XSENS--hip_abd; Sage-hip_ext]
             'Row', 'Hip Flexion/Extension', 
             keys, ['Row', 'Joint Angle'], colors)
 
@@ -861,17 +899,17 @@ def main(participantName, frequency, isSageMotionData):
 
     
 if __name__ == "__main__":
-    
+    '''
     isSageMotionData = True
     
     main('SageMotion data', 100, isSageMotionData)
-    
+    '''
     
     isSageMotionData = False
     
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, isSageMotionData)
-
+    
     print('\nPARTICIPANT 4-02\n')
     main('p402', 60, isSageMotionData)
     
@@ -888,7 +926,7 @@ if __name__ == "__main__":
     main('p3103', 100, isSageMotionData)
 
     
-    '''
+    '''0
     ^ CHECK (1) PARTICIPANT NAME, 
             (2) FREQUENCY
             (3) in main(), change the pathToFolder
