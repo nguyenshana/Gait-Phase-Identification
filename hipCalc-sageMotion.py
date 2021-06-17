@@ -132,8 +132,10 @@ def quat2eulerXYZ(q):
     return [roll, pitch, yaw] 
 
 
+
 '''
-from XSENS AWINDA manual
+Calculated from XSENS AWINDA manual --> ZXY
+Euler angle ZXY has an euler rotation matrix of YXZ
 
 '''
 def XSENSquat2euler(q):
@@ -144,15 +146,16 @@ def XSENSquat2euler(q):
     
     q = quat_multiply(quat_conj(pelvis), thigh)
     
-    t0 = 2*q[2]*q[3] + 2*q[0]*q[1]
-    t1 = 2*q[0]*q[0] + 2*q[3]*q[3] - 1
-    roll = math.atan2(t0, t1)
+    # -R23
+    t0 = 2*q[2]*q[3] - 2*q[0]*q[2]
+    roll = -math.asin(t0)
     
+    # Top = R13, Bottom = R33
+    t1 = 2*q[1]*q[3] + 2*q[0]*q[2]
+    t2 = 2*q[0]*q[0] + 2*q[3]*q[3] - 1
+    pitch = math.atan2(t1, t2)
     
-    t2 = 2*q[1]*q[3] - 2*q[0]*q[2]
-    pitch = -math.asin(t2)
-    
-    
+    # Top = R21, Bottom = R22
     t3 = 2*q[1]*q[2] + 2*q[0]*q[3]
     t4 = 2*q[0]*q[0] + 2*q[1]*q[1] - 1 
     yaw = math.atan2(t3, t4)
@@ -164,6 +167,8 @@ def XSENSquat2euler(q):
     yaw = yaw*180/np.pi
     
     return [roll, pitch, yaw]
+
+
 
     
 
@@ -348,6 +353,7 @@ TO DO:
     - change data structure for HS
 '''
 def main(participantName, frequency, isSageMotionData):
+
     
     row = 0
     lastRow = 0
@@ -647,7 +653,7 @@ def main(participantName, frequency, isSageMotionData):
                 
                 '''
                 
-                hipAngle_biofeedbackPercentage = float ( input("What pecentage increase would you like? (ex. 20)\n") )/100
+                hipAngle_biofeedbackPercentage = 0 #float ( input("What pecentage increase would you like? (ex. 20)\n") )/100
                 
                 hipThreshold = hipAngleMinimas_average * (1 + hipAngle_biofeedbackPercentage)
                 print("Hip threshold is ", hipThreshold, "\n")
@@ -887,13 +893,30 @@ def main(participantName, frequency, isSageMotionData):
         # Add the key for 'Actual' and color
         keys = [ keys[0], 'Actual', keys[1] ]
         colors = [ colors[0], 'b', colors[1] ]
+    
         
     
     graph(hipData, startRow, endRow,
-            participantName, 'Hip Calculations (xsens -pitch; sage hip_ext)', #[XSENS--hip_abd; Sage-hip_ext]
+            participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
             'Row', 'Hip Flexion/Extension', 
             keys, ['Row', 'Joint Angle'], colors)
-
+    
+    '''
+    f = open("hipAngles.txt", "a")
+    
+    print(participantName, "Calculated Values", file=f)
+    
+    for calc in hipData['Calculated']['Joint Angle']:
+        print(calc, file=f)
+        
+    print("\n\n\n\n\n", participantName, "Actual Values", file=f)
+    
+    for act in hipData['Actual']['Joint Angle']:
+        print(act, file=f)
+    
+    
+    f.close()
+    '''
     
     
 
@@ -909,7 +932,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 4-01\n')
     main('p401', 60, isSageMotionData)
-    
+    '''
     print('\nPARTICIPANT 4-02\n')
     main('p402', 60, isSageMotionData)
     
@@ -926,7 +949,7 @@ if __name__ == "__main__":
     main('p3103', 100, isSageMotionData)
 
     
-    '''0
+    
     ^ CHECK (1) PARTICIPANT NAME, 
             (2) FREQUENCY
             (3) in main(), change the pathToFolder
