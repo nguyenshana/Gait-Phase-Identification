@@ -667,7 +667,7 @@ def main(participantName, frequency):
                     
                     #addData(hipData, 'Calculated', [row, hipAngle])
                     hipData['Calculated']['Row'].append(row)
-                    hipData['Calculated']['Joint Angle'].append(actualHip)
+                    hipData['Calculated']['Joint Angle'].append(hipAngle)
          
                     # Found a minima
                     if previousShankAccelZDifference < 0 and shankAccelZDifference > 0:
@@ -728,7 +728,7 @@ def main(participantName, frequency):
                                 
                                 #addData(hipData, 'Calculated', [row, hipAngle])
                                 hipData['Calculated']['Row'].append(row)
-                                hipData['Calculated']['Joint Angle'].append(actualHip)
+                                hipData['Calculated']['Joint Angle'].append(hipAngle)
                                 
                                 # Still add maximas > 2
                                 if previousShankAccelZDifference > 0 and shankAccelZDifference < 0 and previousShankAccelZ > 2:
