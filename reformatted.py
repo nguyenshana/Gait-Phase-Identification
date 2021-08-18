@@ -636,15 +636,13 @@ def checkBiofeedback(self):
 
 
 '''
-NOT COMPLETED YET 
-
 HS: (1) find negative minima in shank ang velY
 (2) find positive maxima for shank ang velX
 (3) find postive maxima for shank ang velY
 (4) wait 300 ms before looking for the next HS
 
 DIFF FROM GETgaitEVENTS()
-(5) if 5 HS are found, then set 70% of the average values as the tresholding, then do steps #3 and #4
+(5) if 5 HS are found, then set the average values as the tresholding, then do steps #1, #3, and #4
 - adds shank ang vel y, not shank accel z
 '''
 def getGaitEventsWithThreshold(self):
@@ -653,14 +651,24 @@ def getGaitEventsWithThreshold(self):
     if( len(self.gaitData['HS']['Shank Ang Vel Y']) > 5 ):
         if ( len(self.gaitData['HS']['Shank Ang Vel Y']) == 6 ) :
             subArray = self.gaitData['HS']['Shank Ang Vel Y'][:5]
-            averageMax = sum(subArray)/5
+            self.averageMax = sum(subArray)/5
+            print("ANG VEL Y VALUES = ", self.gaitData['HS']['Row'])
             print("ANG VEL Y VALUES = ", self.gaitData['HS']['Shank Ang Vel Y'])
-            print("AVERAGE MAX = ", averageMax)
+            print("AVERAGE MAX = ", self.averageMax)
+
+        # negative minima
+        if ( not self.foundNegMinima 
+            and self.previousShankAngVelYDifference < 0 
+            and self.shankAngVelYDifference > 0 
+            and self.previousShankAngVelY < 0 ) :
+            self.foundNegMinima = True
+
 
         # positive maxima
-        if ( self.previousShankAngVelYDifference > 0 
+        if ( self.foundNegMinima
+            and self.previousShankAngVelYDifference > 0 
             and self.shankAngVelYDifference < 0 
-            and self.previousShankAngVelY > 0 ) :
+            and self.previousShankAngVelY > self.averageMax) :
 
             self.gaitData['HS']['Row'].append(self.row)
             self.gaitData['HS']['Shank Ang Vel Y'].append(self.previousShankAngVelY)
@@ -681,6 +689,7 @@ def getGaitEventsWithThreshold(self):
             setPreviousData(self)
     
     else:
+        
         # negative minima
         if ( not self.foundNegMinima 
             and self.previousShankAngVelYDifference < 0 
@@ -703,7 +712,7 @@ def getGaitEventsWithThreshold(self):
             and self.previousShankAngVelY > 0 ) :
 
             self.gaitData['HS']['Row'].append(self.row)
-            self.gaitData['HS']['Shank Ang Vel Y'].append(self.previousShankAngVelY)
+            self.gaitData['HS']['Shank Ang Vel Y'].append(self.shankAngVelY)
             self.foundNegMinima = False
             self.foundPosMaxima = False
             
@@ -772,6 +781,7 @@ def getGaitEvents(self):
     else:
 
         setPreviousData(self)
+
 
 
 # function to print data to a file
@@ -878,19 +888,16 @@ def goThroughData(self, participantName, frequency):
     for row in self.gaitData['HS']['Row']:
         print(row)
         
-    # for accel in self.gaitData['HS']['Shank Accel Z']:
-    for accel in self.gaitData['HS']['Shank Ang Vel Y']:
-        print(accel)
         
     
     keys = ['Calculated', 'Actual', 'Crossed Threshold']
     colors = ['g', 'b', 'r']
     
 
-    # graph(self.hipData, 
-    #         participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
-    #         'Row', 'Hip Flexion/Extension', 
-    #         keys, ['Row', 'Joint Angle'], colors)
+    graph(self.hipData, 
+            participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
+            'Row', 'Hip Flexion/Extension', 
+            keys, ['Row', 'Joint Angle'], colors)
     
     
 
