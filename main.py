@@ -5,11 +5,15 @@ import math
 import numpy as np
 import csv
 
+import gaitAlgorithms
+import sageMotionFunctions
+
 '''
-This file is built off of newGait.py
+This file is built off of shankAccelZMaxima.py (in "alternatives" folder)
 
 Updates:
-    - XSENs data is read from csv files
+    - Converted code to be class-based
+    - SageMotion code is not updated yet
     - Gait detection code is still in progress. Current code considers forward only; 
       if shankAccelZ maxima > 2: 
           during an arbitrary interval, if there is a negative shankAccelZ with 
@@ -25,14 +29,24 @@ class Main():
         self.participantName = participantName
         self.frequency = frequency
 
+
+        # Sagemotion Gait Detection section
+
         self.gaitphase = 'swing'
         self.stridetime = 1.0
         self.stancetime = 0.6 * self.stridetime
 
-        self.DATARATE = ...
+        self.DATARATE = frequency
         self.MIN_THRESHOLD = ...
         self.MAX_THRESHOLD = ...
         self.FEEDBACK_DELAY = ...
+
+        self.iteration = 0
+        self.iters_consecutive_below_thresh_gyroMag_heelstrike = 0
+        self.iters_consecutive_above_thresh_gyroMag_toeoff = 0
+        self.iters_since_last_heelstrike = 0
+
+        # End Sagemotion Gait Detection section
 
         self.getParticipantInfo(participantName)
 
@@ -64,8 +78,6 @@ class Main():
         self.previousShankAngVelX = -1000.0
         self.previousShankAngVelXDiifference = -1000.0
         self.foundPosMaxima = False
-        
-        #do i need to add HSStartRow?
         
         self.hipAngleMinimas = []
         
@@ -111,6 +123,17 @@ class Main():
                 'p701' : [60, 900, 60, 900],
                 'p801' : [0, 1050, 0, 1050],
                 'p905' : [52, 800, 52, 800],
+
+                # made forward/backward end/start the same
+                'pF901' : [0, 900, 0, 900],
+                'pF1001' : [0, 1080, 0, 1080],
+                'pF1109' : [0, 1230, 0, 1230],
+                'pF1209' : [0, 1170, 0, 1170],
+                'pM801' : [0, 990, 0, 990],
+                'pM908' : [0, 960, 0, 960],
+                'pM1001' : [0, 860, 0, 860],
+                'pM1101' : [0, 1160, 0, 1160],
+                'pM1209' : [0, 1410, 0, 1410],
                   }
         
         # XSENS CSV FILES SETUP
@@ -199,75 +222,6 @@ def graph(data, participantName, title, xLabel, yLabel, dataTypesNames, columnNa
         
     
 
-def quat2euler(q):
-    # Input: Quaternion [qw, qx, qy, qz] 
-    # Output: ZYX Euler Angle (in degrees) [roll, pitch, yaw]
-    
-    # ZYX Euler Angle formed by first rotating about the Z axis (yaw), then Y axis (pitch), then X axis (roll)
-    # en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Euler_Angles_to_Quaternion_Conversion
-    # computergraphics.stackexchange.com/questions/8195/how-to-convert-euler-angles-to-quaternions-and-get-the-same-euler-angles-back-fr
-
-        qw = q[0]
-        qx = q[1]
-        qy = q[2]
-        qz = q[3]
-    
-        t0 = 2.0*(qw*qx + qy*qz)
-        t1 = 1.0 - 2.0*(qx*qx + qy*qy)
-        roll = math.atan2(t0, t1)
-    
-        t2 = 2.0*(qw*qy - qz*qx)
-        t2 = 1.0 if t2 > 1.0 else t2 # correct if it is out of range
-        t2 = -1.0 if t2 < -1.0 else t2 # correct if it is out of range
-        pitch = math.asin(t2)
-    
-        t3 = 2.0*(qw*qz + qx*qy)
-        t4 = 1.0 - 2.0*(qy*qy + qz*qz)
-        yaw = math.atan2(t3, t4)
-        
-        
-        # Convert to degrees
-        roll = roll*180/np.pi
-        pitch = pitch*180/np.pi
-        yaw = yaw*180/np.pi
-        
-        return [roll, pitch, yaw]
-    
-    
-    
-    
-def quat2eulerXYZ(q):
-    # Input: Quaternion [qw, qx, qy, qz] 
-    # Output: XYZ Euler Angle (in degrees) [roll, pitch, yaw]
-    # modified from quat2euler 
-    
-    qw = q[0]
-    qx = q[1]
-    qy = q[2]
-    qz = q[3]
-
-    t0 = 2.0*(-qx*qy + qw*qz)
-    t1 = 1.0 - 2.0*(qy*qy + qz*qz)
-    roll = math.atan2(t0, t1)
-
-    t2 = 2.0*(qx*qz + qw*qy)
-    t2 = 1.0 if t2 > 1.0 else t2 # correct if it is out of range
-    t2 = -1.0 if t2 < -1.0 else t2 # correct if it is out of range
-    pitch = math.asin(t2)
-
-    t3 = 2.0*(-qy*qz + qw*qx)
-    t4 = 1.0 - 2.0*(qx*qx + qy*qy)
-    yaw = math.atan2(t3, t4)
-    
-    
-    # Convert to degrees
-    roll = roll*180/np.pi
-    pitch = pitch*180/np.pi
-    yaw = yaw*180/np.pi
-    
-    return [roll, pitch, yaw] 
-
-
 
 '''
 Calculated from XSENS AWINDA manual --> ZXY
@@ -280,7 +234,7 @@ def XSENSquat2euler(q):
     
     thigh = [ q['upperLeg_q0'], q['upperLeg_q1'], q['upperLeg_q2'], q['upperLeg_q3']]
     
-    q = quat_multiply(quat_conj(pelvis), thigh)
+    q = sageMotionFunctions.quat_multiply(sageMotionFunctions.quat_conj(pelvis), thigh)
     
     # -R23
     t0 = 2*q[2]*q[3] - 2*q[0]*q[2]
@@ -304,159 +258,6 @@ def XSENSquat2euler(q):
     
     return [roll, pitch, yaw]
 
-
-
-    
-
-
-def euler2quat(EulerAngle):
-    # Input: ZYX Euler Angle (in degrees) [roll, pitch, yaw]
-    # Output: Quaternion [qw, qx, qy, qz] 
-    
-    # ZYX Euler Angle formed by first rotating about the Z axis (yaw), then Y axis (pitch), then X axis (roll)
-    # en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Euler_Angles_to_Quaternion_Conversion
-    # computergraphics.stackexchange.com/questions/8195/how-to-convert-euler-angles-to-quaternions-and-get-the-same-euler-angles-back-fr
-    
-    roll = EulerAngle[0]*np.pi/180   # X axis rotation, convert to radians
-    pitch = EulerAngle[1]*np.pi/180  # Y axis rotation, convert to radians
-    yaw = EulerAngle[2]*np.pi/180    # Z axis rotation, convert to radians
-    
-    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-
-    return [qw, qx, qy, qz]
-
-
-
-def quat_multiply(a, b):
-    c = []
-    c.append(a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3])
-    c.append(a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2])
-    c.append(a[0]*b[2]+a[2]*b[0]+a[3]*b[1]-a[1]*b[3])
-    c.append(a[0]*b[3]+a[3]*b[0]+a[1]*b[2]-a[2]*b[1])
-    return c
-
-
-
-def quat_conj(a):
-    return [a[0], -a[1], -a[2], -a[3]]   
-    
-        
-
-
-def calibrate(data):
-
-    # Find GS_q_init
-    GS_pelvis_q_init = [
-                    data['pelvis_q0'],
-                    data['pelvis_q1'],
-                    data['pelvis_q2'],
-                    data['pelvis_q3'] 
-                    ]
-    GS_thigh_q_init = [
-                    data['upperLeg_q0'],
-                    data['upperLeg_q1'],
-                    data['upperLeg_q2'],
-                    data['upperLeg_q3']
-                    ]
-    # self.GS_foot_q_init = [
-                    # data[self.NodeNum_foot]['Quat1'],
-                    # data[self.NodeNum_foot]['Quat2'],
-                    # data[self.NodeNum_foot]['Quat3'],
-                    # data[self.NodeNum_foot]['Quat4']]
-    
-    GS_pelvis_q0 = GS_pelvis_q_init
-    GS_thigh_q0 = GS_thigh_q_init
-    
-    pelvis_Euler = quat2euler(GS_pelvis_q0)
-    CommonYaw = pelvis_Euler[2]
-    
-    GB_Euler0_target = [0,0,CommonYaw]  
-    # ^ this is our alignment target, we expect rotate IMU to this orientation, 
-    # both pelvis and thigh have the same target.
-    GB_q0_target = euler2quat(GB_Euler0_target)  # target in quaternion format.    
-    
-    GS_q0 = GS_pelvis_q0  # current IMU orientation, in global coordinate.
-    BS_q_pelvis_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)  
-    # ^ conjugate quaternion of thigh sensor to segment quaternion...
-    # inv represent for inversion, the same as conjugate. 
-    # refer to Hip angle tutorial SageMotion.pptx step2.
-    
-    GS_q0 = GS_thigh_q0  
-    BS_q_thigh_inv = quat_multiply(quat_conj(GS_q0),GB_q0_target)
-    
-    return BS_q_pelvis_inv, BS_q_thigh_inv
-
-
-
-def calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv):
-    
-    GS_pelvis_q = [
-                    data['pelvis_q0'],
-                    data['pelvis_q1'],
-                    data['pelvis_q2'],
-                    data['pelvis_q3'] ]
-    GS_thigh_q = [
-                    data['upperLeg_q0'],
-                    data['upperLeg_q1'],
-                    data['upperLeg_q2'],
-                    data['upperLeg_q3'] ]
-    # self.GS_foot_q = [
-                    # data[self.NodeNum_foot]['Quat1'],
-                    # data[self.NodeNum_foot]['Quat2'],
-                    # data[self.NodeNum_foot]['Quat3'],
-                    # data[self.NodeNum_foot]['Quat4']]
-    
-    GS_q = GS_pelvis_q
-    BS_q = BS_q_pelvis_inv
-    GB_pelvis_q = quat_multiply(GS_q,BS_q)
-
-
-    GS_q = GS_thigh_q
-    # orientation diff between thigh IMU and segment
-    BS_q = BS_q_thigh_inv
-    GB_thigh_q = quat_multiply(GS_q,BS_q)
-
-    # calculate three dimensional hip angles
-    B_q_hip_angles = quat_multiply(quat_conj(GB_pelvis_q),GB_thigh_q)    
-    
-    # Comment the above and uncomment below for no calibration
-    # B_q_hip_angles = quat_multiply(quat_conj(GS_pelvis_q), GS_thigh_q)
-
-    this_Euler = quat2eulerXYZ(B_q_hip_angles)  # Euler must be XYZ order, which is the same as the definition of hip angle.
-    
-    Hip_rot = this_Euler[0]   # hip internal rotation.
-    Hip_abd = this_Euler[1]   # hip abduction angle.
-    Hip_flex = this_Euler[2]  # hip flexion angle. 
-    
-    # Test print
-    '''
-    if self.iteration % 100 == 0:
-        print("hip angle [roll(X) pitch(Y) yaw(Z)]")
-        print(np.around(this_Euler,decimals=3))
-        print("")
-    '''
-        
-    
-    return (Hip_flex,Hip_abd,Hip_rot)
-
-
-'''
-Inputs:
-    - sheetName: excel sheet name
-    - startingColumn: column for q0, assuming that the rest of the quaternion columns appear sequentially after
-
-'''
-def getExcelQuaternions(filepath, sheetName, startingColumn):
-    
-    quat = []
-    
-    for i in range(0, 4):
-        quat.append( pandas.read_excel(filepath, sheet_name=sheetName, usecols=[startingColumn + i]) )
-
-    return quat[0], quat[1], quat[2], quat[3]    
 
 
 
@@ -494,6 +295,12 @@ def getData(self):
                 'shankAngVelY' : float( angularVelocity_csv[row]['Right Lower Leg y'] ),
                 'shankAngVelX' : float( angularVelocity_csv[row]['Right Lower Leg x'] ),
                 'actualHip' : float( hipAngles_csv[row]['Right Hip Flexion/Extension'] ),
+
+                # for sagemotion's gait detection code
+                # p701, 801, and 905 don't have foot angular velocity data, so comment out the following 3 lines
+                # 'footAngVelX' : float( angularVelocity_csv[row]['Right Foot x'] ),
+                # 'footAngVelY' : float( angularVelocity_csv[row]['Right Foot y'] ),
+                # 'footAngVelZ' : float( angularVelocity_csv[row]['Right Foot z'] ),
                 }
 
     self.shankAccelZ = self.data['shankAccelZ']
@@ -635,152 +442,7 @@ def checkBiofeedback(self):
             #print("BIOFEEDBACK ", biofeedbackOn, " - ", row)
 
 
-'''
-HS: (1) find negative minima in shank ang velY
-(2) find positive maxima for shank ang velX
-(3) find postive maxima for shank ang velY
-(4) wait 300 ms before looking for the next HS
 
-DIFF FROM GETgaitEVENTS()
-(5) if 5 HS are found, then set the average values as the tresholding, then do steps #1, #3, and #4
-- adds shank ang vel y, not shank accel z
-'''
-def getGaitEventsWithThreshold(self):
-
-    # If there are 5 HS events are already found, use 70% of the average to be the threshold to find the next positive maxima in ang velY
-    if( len(self.gaitData['HS']['Shank Ang Vel Y']) > 5 ):
-        if ( len(self.gaitData['HS']['Shank Ang Vel Y']) == 6 ) :
-            subArray = self.gaitData['HS']['Shank Ang Vel Y'][:5]
-            self.averageMax = sum(subArray)/5
-            print("ANG VEL Y VALUES = ", self.gaitData['HS']['Row'])
-            print("ANG VEL Y VALUES = ", self.gaitData['HS']['Shank Ang Vel Y'])
-            print("AVERAGE MAX = ", self.averageMax)
-
-        # negative minima
-        if ( not self.foundNegMinima 
-            and self.previousShankAngVelYDifference < 0 
-            and self.shankAngVelYDifference > 0 
-            and self.previousShankAngVelY < 0 ) :
-            self.foundNegMinima = True
-
-
-        # positive maxima
-        if ( self.foundNegMinima
-            and self.previousShankAngVelYDifference > 0 
-            and self.shankAngVelYDifference < 0 
-            and self.previousShankAngVelY > self.averageMax) :
-
-            self.gaitData['HS']['Row'].append(self.row)
-            self.gaitData['HS']['Shank Ang Vel Y'].append(self.previousShankAngVelY)
-            self.foundNegMinima = False
-            self.foundPosMaxima = False
-            
-            HSstartRow = self.row
-
-            while ( self.row - HSstartRow < convertMilliSecToRow(self.frequency, 300) 
-                and self.row < self.lastRow ) :
-                
-                self.row += 1
-                getData(self)
-                setPreviousData(self)
-
-        else:
-
-            setPreviousData(self)
-    
-    else:
-        
-        # negative minima
-        if ( not self.foundNegMinima 
-            and self.previousShankAngVelYDifference < 0 
-            and self.shankAngVelYDifference > 0 
-            and self.previousShankAngVelY < 0 ) :
-            self.foundNegMinima = True
-            
-        # positive maxima for shank ang vel X
-        if ( not self.foundPosMaxima 
-            and self.previousShankAngVelXDifference > 0 
-            and self.shankAngVelXDifference < 0 
-            and self.previousShankAngVelX > 0 ) :
-            self.foundPosMaxima = True
-        
-        # positive maxima
-        if ( self.foundNegMinima 
-            and self.foundPosMaxima 
-            and self.previousShankAngVelYDifference > 0 
-            and self.shankAngVelYDifference < 0 
-            and self.previousShankAngVelY > 0 ) :
-
-            self.gaitData['HS']['Row'].append(self.row)
-            self.gaitData['HS']['Shank Ang Vel Y'].append(self.shankAngVelY)
-            self.foundNegMinima = False
-            self.foundPosMaxima = False
-            
-            HSstartRow = self.row
-            
-            
-            while ( self.row - HSstartRow < convertMilliSecToRow(self.frequency, 300) 
-                and self.row < self.lastRow ) :
-                
-                self.row += 1
-                getData(self)
-                setPreviousData(self)
-
-        else:
-
-            setPreviousData(self)
-
-
-
-'''
-HS: (1) find negative minima in shank ang velY
-(2) find positive maxima for shank ang velX
-(3) find postivie maxima for shank ang velY
-(4) wait 300 ms before looking for the next HS
-'''
-def getGaitEvents(self):
-    # If negative minima is found,
-    # then first positive maxima is HS
-    
-    # negative minima
-    if ( not self.foundNegMinima 
-        and self.previousShankAngVelYDifference < 0 
-        and self.shankAngVelYDifference > 0 
-        and self.previousShankAngVelY < 0 ) :
-        self.foundNegMinima = True
-        
-    # positive maxima for shank ang vel X
-    if ( not self.foundPosMaxima 
-        and self.previousShankAngVelXDifference > 0 
-        and self.shankAngVelXDifference < 0 
-        and self.previousShankAngVelX > 0 ) :
-        self.foundPosMaxima = True
-    
-    # positive maxima
-    if ( self.foundNegMinima 
-        and self.foundPosMaxima 
-        and self.previousShankAngVelYDifference > 0 
-        and self.shankAngVelYDifference < 0 
-        and self.previousShankAngVelY > 0 ) :
-
-        self.gaitData['HS']['Row'].append(self.row)
-        self.gaitData['HS']['Shank Accel Z'].append(self.shankAccelZ)
-        self.foundNegMinima = False
-        self.foundPosMaxima = False
-        
-        HSstartRow = self.row
-        
-        
-        while ( self.row - HSstartRow < convertMilliSecToRow(self.frequency, 300) 
-            and self.row < self.lastRow ) :
-            
-            self.row += 1
-            getData(self)
-            setPreviousData(self)
-
-    else:
-
-        setPreviousData(self)
 
 
 
@@ -875,8 +537,11 @@ def goThroughData(self, participantName, frequency):
         ## SECTION #3: Detecting Heel Strike (HS)
         
         # also sets 'previous values'
-        getGaitEvents(self)
-        # getGaitEventsWithThreshold(self)
+        # gaitAlgorithms.getGaitEvents(self)
+        gaitAlgorithms.getGaitEventsWithThreshold(self)
+        # gaitAlgorithms.getGaitEventsWithThresholdAnd300MSPositive(self
+
+        # gaitAlgorithms.sageMotionGaitDetection(self)
 
 
 
@@ -894,10 +559,10 @@ def goThroughData(self, participantName, frequency):
     colors = ['g', 'b', 'r']
     
 
-    graph(self.hipData, 
-            participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
-            'Row', 'Hip Flexion/Extension', 
-            keys, ['Row', 'Joint Angle'], colors)
+    # graph(self.hipData, 
+    #         participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
+    #         'Row', 'Hip Flexion/Extension', 
+    #         keys, ['Row', 'Joint Angle'], colors)
     
     
 
@@ -1009,14 +674,14 @@ def getSageMotion(participantName, frequency):
         ###  Calibrate to find BS_q, sensor to body segment alignment quaternions on 1st iteration
         ### if self.iteration == 1:
         if initialIteration:
-            BS_q_pelvis_inv, BS_q_thigh_inv = calibrate(data) 
+            BS_q_pelvis_inv, BS_q_thigh_inv = sageMotionFunctions.calibrate(data) 
             # initialIteration = False # added to Section 1 instead
 
         ### Find the gait phase
         ### HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
 
         # Calculate hip extension angle
-        (Hip_flex, Hip_abd, Hip_rot) = calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv) #     
+        (Hip_flex, Hip_abd, Hip_rot) = sageMotionFunctions.calculate_HipExtAngle(data, BS_q_pelvis_inv, BS_q_thigh_inv) #     
         
         ### Give haptic feedback (turn feedback nodes on/off)
         ### if self.config['isFeedbackOn'] == "Yes" and self.alreadyGivenFeedback == 0:
@@ -1139,9 +804,14 @@ def getSageMotion(participantName, frequency):
     
 if __name__ == "__main__":
     
-    
+
+    # ^ CHECK (1) PARTICIPANT NAME, 
+    #         (2) FREQUENCY
+    #         (3) in Main.getParticipantInfo, change the pathToFolder
+
+
     #getSageMotion('SageMotion data', 100)
-    
+
     print('\nPARTICIPANT 4-01\n')
     Main('p401', 60)
     
@@ -1155,7 +825,6 @@ if __name__ == "__main__":
     #print('\nPARTICIPANT 14-02\n')
     #Main('p1402', 60)
     
-    
     print('\nPARTICIPANT 7-01\n')
     Main('p701', 60)
     
@@ -1164,7 +833,7 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 9-05\n')
     Main('p905', 60)
-    
+
     print('\nPARTICIPANT 28-01\n')
     Main('p2801', 100)
 
@@ -1176,13 +845,35 @@ if __name__ == "__main__":
     
     print('\nPARTICIPANT 31-03\n')
     Main('p3103', 100)
-    
-    
-    '''
-    ^ CHECK (1) PARTICIPANT NAME, 
-            (2) FREQUENCY
-            (3) in main(), change the pathToFolder
-    '''
+
+
+
+    print('\nPARTICIPANT F9-01\n')
+    Main('pF901', 100)
+
+    print('\nPARTICIPANT F10-01\n')
+    Main('pF1001', 100)
+
+    print('\nPARTICIPANT F11-09\n')
+    Main('pF1109', 100)
+
+    print('\nPARTICIPANT F12-09\n')
+    Main('pF1209', 100)
+
+    print('\nPARTICIPANT M8-01\n')
+    Main('pM801', 100)
+
+    print('\nPARTICIPANT M9-08\n')
+    Main('pM908', 100)
+
+    print('\nPARTICIPANT M10-01\n')
+    Main('pM1001', 100)
+
+    print('\nPARTICIPANT M11-01\n')
+    Main('pM1101', 100)
+
+    print('\nPARTICIPANT M12-09\n')
+    Main('pM1209', 100)
     
     
     
