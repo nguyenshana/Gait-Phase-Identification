@@ -155,6 +155,7 @@ def getEventsWithShankAccelZ(row, lastRow, hipThreshold,
             continue
     
         elif previousShankAccelZDifference == -1000 :
+            #swap these two :0
             previousShankAccelZ = shankAccelZ 
             previousShankAccelZDifference = shankAccelZ - previousShankAccelZ 
             
