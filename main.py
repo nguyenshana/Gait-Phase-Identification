@@ -534,9 +534,10 @@ def goThroughData(self, participantName, frequency):
                 
         # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
         
+
         ## SECTION #3: Detecting Heel Strike (HS)
         
-        # also sets 'previous values'
+        # The Gait Algorithms also set 'previous values'
         # gaitAlgorithms.getGaitEvents(self)
         gaitAlgorithms.getGaitEventsWithThreshold(self)
         # gaitAlgorithms.getGaitEventsWithThresholdAnd300MSPositive(self
@@ -545,8 +546,7 @@ def goThroughData(self, participantName, frequency):
 
 
 
-
-    
+    # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     
     # SECTION #4: Print Heel Strike Data
 

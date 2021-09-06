@@ -2,12 +2,24 @@ import main
 import sageMotionFunctions
 
 
+
+
+'''
+
+Algorithms in this file should call setPreviousData()
+
+'''
+
+
+
+
+
 '''
 HS: (1) find negative minima in shank ang velY
 (2) find positive maxima for shank ang velX
-(3) find postive maxima for shank ang velY
+(3) find positive maxima for shank ang velY
 (4) let shank ang velY be positive for 300ms
-(5) if 5 HS are found, then set the average values as the tresholding, then do steps #1, #3, and #4
+(5) if 5 HS are found, then set the average values as the thresholding, then do steps #1, #3, and #4
 - adds shank ang vel y, not shank accel z
 
 NOTE:
@@ -115,7 +127,7 @@ def getGaitEventsWithThresholdAnd300MSPositive(self):
 '''
 HS: (1) find negative minima in shank ang velY
 (2) find positive maxima for shank ang velX
-(3) find postive maxima for shank ang velY
+(3) find positive maxima for shank ang velY
 (4) wait 300 ms before looking for the next HS
 
 DIFF FROM GETgaitEVENTS()
@@ -212,7 +224,7 @@ def getGaitEventsWithThreshold(self):
 '''
 HS: (1) find negative minima in shank ang velY
 (2) find positive maxima for shank ang velX
-(3) find postivie maxima for shank ang velY
+(3) find positivie maxima for shank ang velY
 (4) wait 300 ms before looking for the next HS
 '''
 def getGaitEvents(self):
