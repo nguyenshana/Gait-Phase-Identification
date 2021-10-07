@@ -81,7 +81,7 @@ class Main():
         
         self.hipAngleMinimas = []
         
-        self.doBiofeedback = True
+        self.doBiofeedback = False
         self.biofeedbackOn = False
         self.hipThreshold = -1000.0
         
@@ -384,7 +384,7 @@ def setPreviousData(self):
 def checkBiofeedback(self):
 
     if self.row > ( ( self.lastRow - self.initialRow )/6 + self.initialRow ) :
-        doBiofeedback = True
+        self.doBiofeedback = True
 
     
     # If it's SageMotion data, then we'll need to do biofeedback by manually turning it on or off somehow
@@ -402,7 +402,7 @@ def checkBiofeedback(self):
             else:
                 hipAngleMinimas_average = sum(self.hipAngleMinimas)/len(self.hipAngleMinimas)
             
-            #print('Hip Angle extention (minima) average was ', hipAngleMinimas_average)
+            print('Hip Angle extention (minima) average was ', hipAngleMinimas_average)
             
             '''
             
@@ -418,7 +418,9 @@ def checkBiofeedback(self):
             
             '''
             
-            hipAngle_biofeedbackPercentage = 0 #float ( input("What pecentage increase would you like? (ex. 20)\n") )/100
+            '''Uncomment hipAngle_biofeedbackPercentage = 0 and comment the next hipAngle_biofeedbackPercentage line if you don't want to manually input percentages'''
+            # hipAngle_biofeedbackPercentage = 0
+            hipAngle_biofeedbackPercentage = float ( input("What pecentage increase would you like? (ex. 20)\n") )/100
             
             self.hipThreshold = hipAngleMinimas_average * (1 + hipAngle_biofeedbackPercentage)
             print("Hip threshold is ", self.hipThreshold, "\n")
@@ -558,11 +560,27 @@ def goThroughData(self, participantName, frequency):
     keys = ['Calculated', 'Actual', 'Crossed Threshold']
     colors = ['g', 'b', 'r']
     
-
-    # graph(self.hipData, 
-    #         participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
-    #         'Row', 'Hip Flexion/Extension', 
-    #         keys, ['Row', 'Joint Angle'], colors)
+    '''
+    graph(self.hipData, 
+            participantName, 'Hip Calculations (xsens calc ZXY -pitch)', #[XSENS--hip_abd; Sage-hip_ext]
+            'Time (s)', 'Hip Flexion(+)/Extension(-)', 
+            keys, ['Row', 'Joint Angle'], colors)
+    '''
+    
+    fig=plt.figure()
+    ax=fig.add_axes([0,0,1,1])
+    
+    ax.scatter(self.hipData['Calculated']['Row'], self.hipData['Calculated']['Joint Angle'], color='g')
+    ax.scatter(self.hipData['Actual']['Row'], self.hipData['Actual']['Joint Angle'], color='b')
+    ax.scatter(self.hipData['Crossed Threshold']['Row'], self.hipData['Crossed Threshold']['Joint Angle'], color='r')
+       
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Hip Flexion(+)/Extension(-)')
+    ax.set_title('Hip Calculations (Xsens ZXY -pitch)')
+    
+    plt.legend(["Calculated", "Actual", "BFB On"], loc ="upper right", shadow=True)
+    
+    plt.show()
     
     
 
@@ -789,10 +807,10 @@ def getSageMotion(participantName, frequency):
     colors = ['g','r']
     
     
-    graph(hipData, 
-            participantName, 'Hip Calculations (SageMotion)', #[XSENS--hip_abd; Sage-hip_ext]
-            'Row', 'Hip Flexion/Extension', 
-            keys, ['Row', 'Joint Angle'], colors)
+    # graph(hipData, 
+    #         participantName, 'Hip Calculations (SageMotion)', #[XSENS--hip_abd; Sage-hip_ext]
+    #         'Row', 'Hip Flexion/Extension', 
+    #         keys, ['Row', 'Joint Angle'], colors)
 
 
 
@@ -819,14 +837,14 @@ if __name__ == "__main__":
     Main('p402', 60)
     
 
-    #print('\nPARTICIPANT 14-01\n')
-    #Main('p1401', 60)
+    # #print('\nPARTICIPANT 14-01\n')
+    # #Main('p1401', 60)
     
-    #print('\nPARTICIPANT 14-02\n')
-    #Main('p1402', 60)
+    # #print('\nPARTICIPANT 14-02\n')
+    # #Main('p1402', 60)
     
-    print('\nPARTICIPANT 7-01\n')
-    Main('p701', 60)
+    # print('\nPARTICIPANT 7-01\n')
+    # Main('p701', 60)
     
     print('\nPARTICIPANT 8-01\n')
     Main('p801', 60)
