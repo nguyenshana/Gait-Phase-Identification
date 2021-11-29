@@ -1,0 +1,15 @@
+{
+  "angle_max": 10,
+  "angle_min": -10,
+  "feedback_enabled": true,
+  "last_connect_feedback": [
+    "88:6B:0F:E1:D8:96",
+    "88:6B:0F:E1:D8:9F"
+  ],
+  "last_connect_sensors": [
+    "88:6B:0F:E1:D8:9E"
+  ],
+  "local_time": "2021-06-12-05-48-27",
+  "save_mode": "xlsx",
+  "trial_name": "trial_0"
+}
