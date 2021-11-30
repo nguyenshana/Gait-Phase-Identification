@@ -2,7 +2,27 @@
 
 Algorithm to detect gait phase.
 
-## Main code is in: main.py
+## SageMotion
+
+The best folder to build upon is HipExt_SageMotion_01111
+
+Folders:
+- TSA_SageMotion_02010: 
+	- from SageMotion UI
+	- code not edited
+
+- HipExt_SageMotion_01111:
+	- from SageMotion UI
+	- core.py slightly edited
+	- original code tested with the system and it worked
+	- **best code to use**
+
+- TSA_HipExt_SageMotion:
+	- an attempt to combine TSA and HipExt code
+	- copied TSA_SageMotion_02010 code and added some HipExt_SageMotion_01111 code
+
+
+## Main code for XSENS testing is in: main.py
 
 main.py uses some functions in sageMotionFunctions.py (which are functions provided by SageMotion), and gaitAlgorithms.py (which are gait detection algorithms)
 

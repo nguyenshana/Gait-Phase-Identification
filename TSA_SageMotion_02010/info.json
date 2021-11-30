@@ -1,0 +1,31 @@
+{
+  "user_guide_file": "Angle feedback test App Guide.pdf",
+  "app_name": "Angle Feedback Test",
+  "app_description": "This app demonstrates a simple feedback application. The feedback nodes vibrate if the sensor node orientation exceeds minimum or maximum thresholds.<br><br>Nodes Required: 3 <br> -Sensing (1): sensor <br> -Feedback (2): min feedback, max feedback",
+  "app_id": "020",
+  "app_version": "1_0",
+  "version_id": "02010",
+  "parameters_setting": [
+    ["Feedback Settings",
+      {"source": "feedback_enabled", "title": "Feedback On", "type": "bool",
+       "description": "Enable/Disable feedback"},
+      {"source": "angle_max", "title": "Max Threshold Angle", "type": "float", "validation": [-90, 90],
+       "description": "Feedback would be given when the Trunk Sway higher than the threshold."},
+      {"source": "angle_min", "title": "Min Threshold Angle", "type": "float", "validation": [-90, 90],
+       "description": "Feedback would be given when the Trunk Sway lower than the threshold."}],
+    ["Save Options",
+      {"source": "save_mode", "title": "Save Mode", "type": "combo", "validation": ["csv", "h5", "xlsx"], "description": "Save file in specified format"}]
+  ],
+  "user_fields": [{"name": "time", "data_type": "float", "size":1},
+                  {"name": "angle","data_type": "float", "size":1},
+                  {"name": "angle_min","data_type": "float", "size":1},
+                  {"name": "angle_max","data_type": "float", "size":1},
+                  {"name": "feedback1","data_type": "int", "size":1},
+                  {"name": "feedback2","data_type": "int", "size":1},
+                  {"name": "fnc_button","data_type": "int", "size":1}],
+  "sensors": ["sensor"],
+  "feedback": ["min feedback", "max feedback"],
+  "push_or_pull": "pull",
+  "pulse_length": 1,
+  "datarate": 100
+}

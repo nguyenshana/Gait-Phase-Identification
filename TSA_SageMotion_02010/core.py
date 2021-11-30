@@ -2,61 +2,15 @@ import logging
 from sage.base_app import BaseApp
 if __name__ == '__main__':
     import TSA_functions
-    import HipExt_funcs
 else:
     from . import TSA_functions
-    from . import HipExt_funcs
-
-
 
 class Core(BaseApp):
 ###########################################################
 # INITIALIZE APP
-
-# 'original' = TSA_functions folder 02010
 ###########################################################
     def __init__(self, my_sage):
         BaseApp.__init__(self, my_sage, __file__)
-
-        '''
-        *** FROM HIPEXT FOLDER 01111 *** 
-
-        '''
-
-        # self.gaitphase = 'swing' # default gait phase
-        self.stridetime = 1.0
-        self.stancetime = 0.6*self.stridetime
-
-        self.DATARATE = self.info["datarate"]
-        self.MIN_THRESHOLD = float(self.config['min_threshold'])
-        self.MAX_THRESHOLD = float(self.config['max_threshold'])
-        self.FEEDBACK_DELAY = float(self.config['feedback_delay'])
-
-        # self.NodeNum_foot = self.info["sensors"].index('foot')
-        self.NodeNum_thigh = self.info["sensors"].index('thigh')
-        self.NodeNum_pelvis = self.info["sensors"].index('pelvis')
-        self.NodeNum_feedback_min = self.info["feedback"].index('feedback_min')
-        self.NodeNum_feedback_max = self.info["feedback"].index('feedback_max')
-
-        # self.iteration = 0
-        self.iters_consecutive_below_thresh_gyroMag_heelstrike = 0
-        self.iters_consecutive_above_thresh_gyroMag_toeoff = 0
-        self.iters_since_last_heelstrike = 0
-
-        self.feedback_min = 0
-        self.feedback_max = 0
-
-        self.alreadyGivenFeedback = 0
-        self.thigh_Yawoffset_q = [1,0,0,0]
-
-        self.BS_q_pelvis_inv = [1,0,0,0]  # sensor to segment alignment quaternion, inv denotes conjugate.
-        self.BS_q_thigh_inv = [1,0,0,0]
-
-
-        '''
-        *** ORIGINAL *** 
-
-        '''
 
         # Set up the app
         # coding guide: The prefix "self" denotes global variable
@@ -217,15 +171,7 @@ class Core(BaseApp):
 #            print("Iteration {}".format(self.iteration))  # coding guide: print debug information.
 #        my_data = {'iteration': [self.iteration]}
 #       coding guide: if you want to show more data in GUI, add it here.
-        my_data = {
-        
-                   # from HipExt folder 01111
-                   'Hip_ext': [Hip_ext],
-                   'Feedback_min': [self.feedback_min],
-                   'Feedback_max': [self.feedback_max],
-
-                   # 'original'
-                   'time': [self.iteration/self.info["datarate"]],
+        my_data = {'time': [self.iteration/self.info["datarate"]],
                    'angle': [TSA],
                    'angle_min': [TSA_min_this_step],
                    'angle_max': [TSA_max_this_step],

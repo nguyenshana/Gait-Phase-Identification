@@ -1,0 +1,20 @@
+{
+  "baselineHipAngle": 7.7,
+  "feedback_delay": 0.03,
+  "isFeedbackOn": "Yes",
+  "last_connect_feedback": [
+    "88:6B:0F:E1:D8:9F",
+    "88:6B:0F:E1:D8:96"
+  ],
+  "last_connect_sensors": [
+    "88:6B:0F:E1:D8:A2",
+    "88:6B:0F:E1:D8:9E"
+  ],
+  "local_time": "2021-10-14-18-59-09",
+  "max_threshold": 20,
+  "min_threshold": -20,
+  "percentHipAngleIncrease": 0,
+  "save_mode": "xlsx",
+  "trial_name": "Hip_angle_0",
+  "whichLeg": "Left Leg"
+}
