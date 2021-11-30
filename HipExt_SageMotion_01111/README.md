@@ -1,6 +1,6 @@
 # HipExt_SageMotion_01111 Folder
 
-This folder was downloaded from the SageMotion UI. The original code has been tested and it worked. 
+This folder was downloaded from the SageMotion UI. The original code has been tested and it worked. core.py has been slightly edited to use their provided gait segmentation algorithm.
 
 ## To do items :
 
