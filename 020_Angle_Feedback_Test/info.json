@@ -1,41 +1,75 @@
 {
-  "user_guide_file": "Angle Feedback Test App Guide.pdf",
-  "app_name": "Angle Feedback Test",
-  "app_description": "This app demonstrates a simple feedback application. The feedback nodes vibrate if the sensor node orientation exceeds minimum or maximum thresholds.<br><br>Nodes Required: 3 <br> -Sensing (1): sensor <br> -Feedback (2): min feedback, max feedback",
+
+  // 'original' = TSA_functions folder 02010
+
+  // no pdf provided in this folder
+  "user_guide_file": "Angle feedback test App Guide.pdf",
+
+  "app_name": "Angle Feedback Test + Hip Extension",
+  "app_description": "This app demonstrates a simple feedback application. The feedback nodes vibrate if the sensor node orientation exceeds minimum or maximum thresholds.<br><br>Nodes Required: 3 <br> -Sensing (1): sensor <br> -Feedback (2): min feedback, max feedback + AND + Measure and train left or right hip extension angle <br><br>Nodes Required: 4 <br> -Sensing (4): pelvis (back center, switch pointing up), thigh (left or right lateral, switch pointing up) <br> -Feedback (2): feedback_min, feedback_max",
+
+  // originally 020
   "app_id": "020",
-  "app_version": "1_1",
-  "version_id": "02011",
+  "app_version": "1_0",
+
+  // originally 02010
+  "version_id": "12345",
   "parameters_setting": [
-    ["Feedback Settings",
-      {"source": "feedback_enabled", 
-        "title": "Feedback On", 
-        "type": "bool",
+
+    // from HipExt folder 01111
+    ["Sensor Placement",
+      {"source": "whichLeg", "title": "Which Leg?", "type": "combo", "validation": ["Right Leg", "Left Leg"],
+       "description": "Choose the leg you want to place the sensor"}],
+    ["Feedback Setting",
+      {"source": "isFeedbackOn", "title": "Feedback On?", "type": "combo", "validation": ["Yes", "No"],
        "description": "Enable/Disable feedback"},
-      {"source": "angle_max", 
-        "title": "Max Threshold Angle", 
-        "type": "float", 
-        "validation": [-90, 90],
-       "description": "Feedback would be given when this angle is higher than the threshold."},
-      {"source": "angle_min", 
-        "title": "Min Threshold Angle", 
-        "type": "float", 
-        "validation": [-90, 90],
-       "description": "Feedback would be given when this angle is lower than the threshold."}],
+      {"source": "min_threshold", "title": "Min Threshold Angle", "type": "float",
+       "description": "Minimum threshold angle"},
+      {"source": "max_threshold", "title": "Max Threshold Angle", "type": "float",
+       "description": "Maximum threshold angle"},
+      {"source": "feedback_delay", "title": "Delay Time before Feedback (sec)", "type": "float",
+       "description": "How long to wait after a trial before giving haptic feedback pulse"}],
+
+    // 'original'
+    ["Feedback Settings",
+      {"source": "feedback_enabled", "title": "Feedback On", "type": "bool",
+       "description": "Enable/Disable feedback"},
+      {"source": "angle_max", "title": "Max Threshold Angle", "type": "float", "validation": [-90, 90],
+       "description": "Feedback would be given when the Trunk Sway higher than the threshold."},
+      {"source": "angle_min", "title": "Min Threshold Angle", "type": "float", "validation": [-90, 90],
+       "description": "Feedback would be given when the Trunk Sway lower than the threshold."}],
     ["Save Options",
-      {"source": "save_mode", 
-      "title": "Save Mode", 
-      "type": "combo", 
-      "validation": ["csv", "h5", "xlsx"], 
-      "description": "Save file in specified format"}]
+      {"source": "save_mode", "title": "Save Mode", "type": "combo", "validation": ["csv", "h5", "xlsx"], "description": "Save file in specified format"}]
   ],
-  "user_fields": [{"name": "time", "data_type": "float", "size":1},
+  "user_fields": [ // from HipExt folder 01111
+                  {"name": "Hip_ext", "data_type": "float", "size":1},
+                  {"name": "Feedback_min", "data_type": "int", "size":1},
+                  {"name": "Feedback_max", "data_type": "int", "size":1},
+
+                  // 'original'
+                  {"name": "time", "data_type": "float", "size":1},
                   {"name": "angle","data_type": "float", "size":1},
                   {"name": "angle_min","data_type": "float", "size":1},
                   {"name": "angle_max","data_type": "float", "size":1},
                   {"name": "feedback1","data_type": "int", "size":1},
-                  {"name": "feedback2","data_type": "int", "size":1}],
-  "sensors": ["sensor"],
-  "feedback": ["min feedback", "max feedback"],
+                  {"name": "feedback2","data_type": "int", "size":1},
+                  {"name": "fnc_button","data_type": "int", "size":1}],
+  "sensors": [ // from HipExt folder 01111
+              "thigh", "pelvis",
+
+              // 'original'
+              "sensor",],
+  "feedback": [ // from HipExt folder 01111
+                "feedback_min", "feedback_max",
+
+                // 'original'
+                "min feedback", "max feedback"],
+  // from HipExt folder 01111
+  "Is_pull": true,
+  "pulse_length": 0.5,
+
+  // 'original'
+  "push_or_pull": "pull",
   "pulse_length": 1,
   "datarate": 100
 }

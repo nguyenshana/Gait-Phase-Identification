@@ -1,15 +1,39 @@
 {
-  "angle_max": 10,
-  "angle_min": -10,
+
+  // 'original' = TSA_functions folder 02010
+
+  // from HipExt folder 01111
+  "baselineHipAngle": 7.7,
+  "feedback_delay": 0.03,
+  "isFeedbackOn": "Yes",
+  "last_connect_feedback": [
+    "88:6B:0F:E1:D8:9F",
+    "88:6B:0F:E1:D8:96"
+  ],
+  
+  "max_threshold": 20,
+  "min_threshold": -20,
+  "percentHipAngleIncrease": 0,
+  "whichLeg": "Left Leg",
+
+
+  //  'original'
+  "angle_max": 30,
+  "angle_min": -30,
   "feedback_enabled": true,
   "last_connect_feedback": [
-    "88:6B:0F:E1:D8:96",
-    "88:6B:0F:E1:D8:9F"
+    // from HipExt folder 01111
+    "88:6B:0F:E1:D8:A2",
+    "88:6B:0F:E1:D8:9E",
+
+    // 'original'
+    "68:0A:E2:53:23:D3",
+    "68:0A:E2:53:23:F5"
   ],
   "last_connect_sensors": [
-    "88:6B:0F:E1:D8:9E"
+    "68:0A:E2:53:23:D8"
   ],
-  "local_time": "2021-06-12-05-48-27",
+  "local_time": "2021-11-29-14-46-58",
   "save_mode": "xlsx",
-  "trial_name": "trial_0"
+  "trial_name": "trial_1"
 }
