@@ -13,8 +13,8 @@ Folders:
 
 - HipExt_SageMotion_01111:
 	- from SageMotion UI
-	- core.py slightly edited
-	- original code tested with the system and it worked
+	- core.py slightly edited to use their provided gait segmentation algorithm
+	- original code without gait segmentation was tested with the system and it worked
 	- **best code to use**
 
 - TSA_HipExt_SageMotion:
