@@ -1,0 +1,34 @@
+{
+  "user_guide_file": "Hip Extension App Guide.pdf",
+  "app_name": "Hip Extension",
+
+  "app_description": "Measure and train left or right hip extension angle <br><br>Nodes Required: 4 <br> -Sensing (4): pelvis (back center, switch pointing up), thigh (left or right lateral, switch pointing up) <br> -Feedback (2): feedback_min, feedback_max",
+  "app_id" : "011",
+  "app_version" : "1_1",
+  "version_id" : "01111",
+  "parameters_setting": [
+    ["Sensor Placement",
+      {"source": "whichLeg", "title": "Which Leg?", "type": "combo", "validation": ["Right Leg", "Left Leg"],
+       "description": "Choose the leg you want to place the sensor"}],
+    ["Feedback Setting",
+      {"source": "isFeedbackOn", "title": "Feedback On?", "type": "combo", "validation": ["Yes", "No"],
+       "description": "Enable/Disable feedback"},
+      {"source": "min_threshold", "title": "Min Threshold Angle", "type": "float",
+       "description": "Minimum threshold angle"},
+      {"source": "max_threshold", "title": "Max Threshold Angle", "type": "float",
+       "description": "Maximum threshold angle"},
+      {"source": "feedback_delay", "title": "Delay Time before Feedback (sec)", "type": "float",
+       "description": "How long to wait after a trial before giving haptic feedback pulse"}],
+    ["Save Options",
+      {"source": "save_mode", "title": "Save Mode", "type": "combo", "validation": ["csv", "h5", "xlsx"], "description": "Save file in specified format"}]
+  ],
+  "user_fields": [{"name": "time", "data_type": "float", "size":1},
+                  {"name": "Hip_ext", "data_type": "float", "size":1},
+                  {"name": "Feedback_min", "data_type": "int", "size":1},
+                  {"name": "Feedback_max", "data_type": "int", "size":1}],
+  "sensors": ["thigh", "pelvis"],
+  "feedback": ["feedback_min", "feedback_max"],
+  "Is_pull": true,
+  "pulse_length": 0.5,
+  "datarate": 100
+}
