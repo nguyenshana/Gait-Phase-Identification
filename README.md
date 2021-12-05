@@ -21,6 +21,10 @@ Folders:
 	- an attempt to combine TSA and HipExt code
 	- copied TSA_SageMotion_02010 code and added some HipExt_SageMotion_01111 code
 
+- HipExt_SageMotion_OurGait:
+	- Used HipExt_SageMotion_01111 folder
+	- Added our gait algorithm from ./gaitAlgorithms.py
+
 
 ## Main code for XSENS testing is in: main.py
 
