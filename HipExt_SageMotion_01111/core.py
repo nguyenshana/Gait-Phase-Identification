@@ -98,18 +98,8 @@ class Core(BaseApp):
         # Give haptic feedback (turn feedback nodes on/off)
         if self.config['isFeedbackOn'] == "Yes": # and self.alreadyGivenFeedback == 0:
             self.Hip_ext = Hip_ext
+            HipExt_funcs.give_feedback(self) #
 
-            '''
-            ** ORIGINALLY NOT COMMENTED OUT **
-            '''
-            # HipExt_funcs.give_feedback(self) #
-
-
-            '''
-            ** ADDED TO CODE **
-            '''
-            if self.Hip_ext > self.feedback_min:
-                HipExt_funcs.give_feedback(self)
 
 
         time_now = self.iteration / self.DATARATE # time in seconds

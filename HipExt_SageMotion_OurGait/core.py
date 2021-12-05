@@ -22,7 +22,7 @@ class Core(BaseApp):
     def __init__(self, my_sage):
         BaseApp.__init__(self, my_sage, __file__)
 
-        self.gaitphase = 'swing' # default gait phase
+        # self.gaitphase = 'swing' # default gait phase
         self.stridetime = 1.0
         self.stancetime = 0.6*self.stridetime
 
@@ -115,18 +115,7 @@ class Core(BaseApp):
         # Give haptic feedback (turn feedback nodes on/off)
         if self.config['isFeedbackOn'] == "Yes": # and self.alreadyGivenFeedback == 0:
             self.Hip_ext = Hip_ext
-
-            '''
-            ** ORIGINALLY NOT COMMENTED OUT **
-            '''
-            # HipExt_funcs.give_feedback(self) #
-
-
-            '''
-            ** ADDED TO CODE **
-            '''
-            if self.Hip_ext > self.feedback_min:
-                HipExt_funcs.give_feedback(self)
+            HipExt_funcs.give_feedback(self) 
 
 
         time_now = self.iteration / self.DATARATE # time in seconds
@@ -134,14 +123,14 @@ class Core(BaseApp):
         # my_data = {'time': [time_now],
                    # 'Gait_Phase': [self.gaitphase]}
 
-        '''
-        ** ADDED Gait_Phase **
-        '''
-        my_data = {'time': [time_now],
-                   'Hip_ext': [Hip_ext],
-                   'Feedback_min': [self.feedback_min],
-                   'Feedback_max': [self.feedback_max],
-                   'Gait_Phase': [self.gaitphase]}
+
+        my_data = {
+                       'time': [time_now],
+                       'Hip_ext': [Hip_ext],
+                       'Feedback_min': [self.feedback_min],
+                       'Feedback_max': [self.feedback_max],
+                       # 'Gait_Phase': [self.gaitphase]
+                   }
         self.my_sage.save_data(data, my_data)
         self.my_sage.send_stream_data(data, my_data)
         return True
