@@ -26,7 +26,7 @@
                   {"name": "Hip_ext", "data_type": "float", "size":1},
                   {"name": "Feedback_min", "data_type": "int", "size":1},
                   {"name": "Feedback_max", "data_type": "int", "size":1}],
-  "sensors": ["thigh", "pelvis"],
+  "sensors": ["thigh", "pelvis","foot"],
   "feedback": ["feedback_min", "feedback_max"],
   "Is_pull": true,
   "pulse_length": 0.5,

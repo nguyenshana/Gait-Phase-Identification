@@ -31,7 +31,7 @@ class Core(BaseApp):
         self.MAX_THRESHOLD = float(self.config['max_threshold'])
         self.FEEDBACK_DELAY = float(self.config['feedback_delay'])
 
-        # self.NodeNum_foot = self.info["sensors"].index('foot')
+        self.NodeNum_foot = self.info["sensors"].index('foot')
         self.NodeNum_thigh = self.info["sensors"].index('thigh')
         self.NodeNum_pelvis = self.info["sensors"].index('pelvis')
         self.NodeNum_feedback_min = self.info["feedback"].index('feedback_min')
