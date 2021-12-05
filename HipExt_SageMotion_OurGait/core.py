@@ -52,6 +52,21 @@ class Core(BaseApp):
         self.BS_q_thigh_inv = [1,0,0,0]
 
 
+        '''
+        ** added for our gait code **
+        '''
+        self.NodeNum_shank = self.info["sensors"].index('shank')
+        self.gaitData = { 'HS' : 
+            { 
+                'Shank Ang Vel Y' : [],
+            },
+        }
+        self.foundPosMaxima = False
+        self.foundNegMinima = False
+
+
+
+
 ###########################################################
 # CHECK NODE CONNECTIONS
 ###########################################################
@@ -85,15 +100,17 @@ class Core(BaseApp):
         if self.iteration == 1:
             HipExt_funcs.calibrate(self,data) #
 
+        # Calculate hip extension angle
+        (Hip_ext,Hip_abd,Hip_rot) = HipExt_funcs.calculate_HipExtAngle(self,data) #
+
+
         # Find the gait phase
 
         '''
         ** ORIGINALLY COMMENTED OUT **
         '''
-        HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
-
-        # Calculate hip extension angle
-        (Hip_ext,Hip_abd,Hip_rot) = HipExt_funcs.calculate_HipExtAngle(self,data) #
+        # HipExt_funcs.update_gaitphase(self,self.NodeNum_foot,data)
+        HipExt_funcs.getGaitEventsWithThreshold(self,self.NodeNum_shank,data, Hip_ext)
 
         # Give haptic feedback (turn feedback nodes on/off)
         if self.config['isFeedbackOn'] == "Yes": # and self.alreadyGivenFeedback == 0:

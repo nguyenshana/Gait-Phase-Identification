@@ -78,7 +78,13 @@ DIFF FROM GETgaitEVENTS()
 (5) if 5 HS are found, then set the average values as the tresholding, then do steps #1, #3, and #4
 - adds shank ang vel y, not shank accel z
 '''
-def getGaitEventsWithThreshold(self):
+def getGaitEventsWithThreshold(self,node_num,data, hip_angle):
+
+
+    # shank angular velocity
+    shank_av_x = data[node_num]['GyroX'] 
+    shank_av_y  = data[node_num]['GyroY'] 
+    shank_av_z  = data[node_num]['GyroZ']
 
     # If there are 5 HS events are already found, use 70% of the average to be the threshold to find the next positive maxima in ang velY
     if( len(self.gaitData['HS']['Shank Ang Vel Y']) > 5 ):
@@ -103,23 +109,30 @@ def getGaitEventsWithThreshold(self):
             and self.shankAngVelYDifference < 0 
             and self.previousShankAngVelY > self.averageMax) :
 
-            self.gaitData['HS']['Row'].append(self.row)
+            # self.gaitData['HS']['Row'].append(self.row)
             self.gaitData['HS']['Shank Ang Vel Y'].append(self.previousShankAngVelY)
             self.foundNegMinima = False
             self.foundPosMaxima = False
-            
-            HSstartRow = self.row
 
-            while ( self.row - HSstartRow < main.convertMilliSecToRow(self.frequency, 300) 
-                and self.row < self.lastRow ) :
-                
-                self.row += 1
-                main.getData(self)
-                main.setPreviousData(self)
+            '''
+            # Set up for next loop
+            '''
+            
+            self.previousShankAngVelYDifference = shank_av_y - self.previousShankAngVelY
+            self.previousShankAngVelY = shank_av_y
+            self.previousShankAngVelXDifference = shank_av_x - self.previousShankAngVelX
+            self.previousShankAngVelX = shank_av_x
 
         else:
 
-            main.setPreviousData(self)
+            '''
+            # Set up for next loop
+            '''
+
+            self.previousShankAngVelYDifference = shank_av_y - self.previousShankAngVelY
+            self.previousShankAngVelY = shank_av_y
+            self.previousShankAngVelXDifference = shank_av_x - self.previousShankAngVelX
+            self.previousShankAngVelX = shank_av_x
     
     else:
         
@@ -144,34 +157,30 @@ def getGaitEventsWithThreshold(self):
             and self.shankAngVelYDifference < 0 
             and self.previousShankAngVelY > 0 ) :
 
-            self.gaitData['HS']['Row'].append(self.row)
-            self.gaitData['HS']['Shank Ang Vel Y'].append(self.shankAngVelY)
+            # self.gaitData['HS']['Row'].append(self.row)
+            self.gaitData['HS']['Shank Ang Vel Y'].append(shank_av_y)
             self.foundNegMinima = False
             self.foundPosMaxima = False
             
-            HSstartRow = self.row
-            
-            
-            while ( self.row - HSstartRow < main.convertMilliSecToRow(self.frequency, 300) 
-                and self.row < self.lastRow ) :
-                
-                self.row += 1
-                main.getData(self)
-                main.setPreviousData(self)
+            '''
+            # Set up for next loop
+            '''
+
+            self.previousShankAngVelYDifference = shank_av_y - self.previousShankAngVelY
+            self.previousShankAngVelY = shank_av_y
+            self.previousShankAngVelXDifference = shank_av_x - self.previousShankAngVelX
+            self.previousShankAngVelX = shank_av_x
 
         else:
 
-            main.setPreviousData(self)
+            '''
+            # Set up for next loop
+            '''
 
-
-
-
-
-
-
-
-
-
+            self.previousShankAngVelYDifference = shank_av_y - self.previousShankAngVelY
+            self.previousShankAngVelY = shank_av_y
+            self.previousShankAngVelXDifference = shank_av_x - self.previousShankAngVelX
+            self.previousShankAngVelX = shank_av_x
 
 
 
